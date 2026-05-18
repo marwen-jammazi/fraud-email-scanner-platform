@@ -159,13 +159,19 @@
 
             <td class="text-end">
               <a
-                *ngIf="hasEmailId(log); else noEmailAction"
+                *ngIf="hasEmailId(log) && isEmailAvailable(log); else unavailableEmail"
                 class="view-email-btn"
                 [routerLink]="['/emails', getEmailId(log)]"
               >
                 View Email
                 <i class="bi bi-arrow-right"></i>
               </a>
+
+              <ng-template #unavailableEmail>
+                <span *ngIf="hasEmailId(log); else noEmailAction" class="deleted-email-pill">
+                  Deleted / Unavailable
+                </span>
+              </ng-template>
 
               <ng-template #noEmailAction>
                 <span class="no-action">N/A</span>

@@ -1,14 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { AuditLog, AuditService } from '../../../core/services/audit.service';
+import { ScannerService } from '../../../core/services/scanner.service';
 
 @Component({
   selector: 'app-audit-logs',
   templateUrl: './audit-logs.component.html',
-  styleUrls: ['./audit-logs.component.scss']
+  styleUrls: ['./audit-logs.component.scss'],
 })
 export class AuditLogsComponent implements OnInit {
   logs: AuditLog[] = [];
   filteredLogs: AuditLog[] = [];
+
+  availableEmailIds = new Set<number>();
 
   loading = false;
   errorMessage = '';
@@ -18,7 +21,10 @@ export class AuditLogsComponent implements OnInit {
 
   eventTypes: string[] = [];
 
-  constructor(private auditService: AuditService) {}
+  constructor(
+    private auditService: AuditService,
+    private scannerService: ScannerService,
+  ) {}
 
   ngOnInit(): void {
     this.loadAuditLogs();
@@ -37,10 +43,11 @@ export class AuditLogsComponent implements OnInit {
           new Set(
             this.logs
               .map((log) => this.getEventType(log))
-              .filter((type) => type !== 'N/A')
-          )
+              .filter((type) => type !== 'N/A'),
+          ),
         );
 
+        this.loadAvailableEmailIds();
         this.loading = false;
       },
       error: (error) => {
@@ -48,7 +55,23 @@ export class AuditLogsComponent implements OnInit {
         this.errorMessage =
           'Failed to load audit logs. Make sure audit-service is running on port 8083.';
         this.loading = false;
-      }
+      },
+    });
+  }
+
+  loadAvailableEmailIds(): void {
+    this.scannerService.getAllEmails().subscribe({
+      next: (emails) => {
+        this.availableEmailIds = new Set(
+          (emails || [])
+            .map((email) => email.emailId || email.id || email.emailMessageId)
+            .filter((id) => id !== undefined && id !== null),
+        );
+      },
+      error: (error) => {
+        console.error('Failed to load available email IDs:', error);
+        this.availableEmailIds = new Set();
+      },
     });
   }
 
@@ -84,13 +107,13 @@ export class AuditLogsComponent implements OnInit {
 
   getScannedEvents(): number {
     return this.logs.filter((log) =>
-      this.getEventType(log).includes('SCANNED')
+      this.getEventType(log).includes('SCANNED'),
     ).length;
   }
 
   getFlaggedEvents(): number {
     return this.logs.filter((log) =>
-      this.getEventType(log).includes('FLAGGED')
+      this.getEventType(log).includes('FLAGGED'),
     ).length;
   }
 
@@ -108,6 +131,14 @@ export class AuditLogsComponent implements OnInit {
 
   hasEmailId(log: AuditLog): boolean {
     return log.emailId !== undefined && log.emailId !== null;
+  }
+
+  isEmailAvailable(log: AuditLog): boolean {
+    if (!this.hasEmailId(log)) {
+      return false;
+    }
+
+    return this.availableEmailIds.has(Number(log.emailId));
   }
 
   getUserId(log: AuditLog): number | string {
@@ -146,6 +177,10 @@ export class AuditLogsComponent implements OnInit {
     }
 
     if (type.includes('FEEDBACK')) {
+      return 'warning';
+    }
+
+    if (type.includes('FALSE') || type.includes('CONFIRMED')) {
       return 'warning';
     }
 
