@@ -8,6 +8,7 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class LayoutComponent implements OnInit {
   isDarkTheme = false;
+  sidebarImageFailed = false;
 
   constructor(private authService: AuthService) {}
 
@@ -39,6 +40,10 @@ export class LayoutComponent implements OnInit {
   }
 
   getProfilePictureUrl(): string | null {
+    if (this.sidebarImageFailed) {
+      return null;
+    }
+
     const url = localStorage.getItem('profilePictureUrl');
 
     if (!url) {
@@ -50,6 +55,11 @@ export class LayoutComponent implements OnInit {
     }
 
     return `http://localhost:8081${url}`;
+  }
+
+  onSidebarImageError(): void {
+    this.sidebarImageFailed = true;
+    localStorage.removeItem('profilePictureUrl');
   }
 
   toggleTheme(): void {

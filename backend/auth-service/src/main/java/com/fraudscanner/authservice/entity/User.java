@@ -1,4 +1,4 @@
-﻿package com.fraudscanner.authservice.entity;
+package com.fraudscanner.authservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

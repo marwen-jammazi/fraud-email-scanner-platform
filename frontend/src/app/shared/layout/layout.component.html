@@ -50,6 +50,7 @@
               *ngIf="getProfilePictureUrl(); else avatarIcon"
               [src]="getProfilePictureUrl()"
               alt="Profile picture"
+              (error)="onSidebarImageError()"
             />
 
             <ng-template #avatarIcon>
@@ -64,7 +65,10 @@
         </a>
 
         <button class="theme-toggle-btn" type="button" (click)="toggleTheme()">
-          <i class="bi" [ngClass]="isDarkTheme ? 'bi-sun-fill' : 'bi-moon-stars-fill'"></i>
+          <i
+            class="bi"
+            [ngClass]="isDarkTheme ? 'bi-sun-fill' : 'bi-moon-stars-fill'"
+          ></i>
           {{ isDarkTheme ? "Light Mode" : "Dark Mode" }}
         </button>
 
@@ -84,7 +88,10 @@
 
         <div class="topbar-actions">
           <button class="topbar-theme-btn" type="button" (click)="toggleTheme()">
-            <i class="bi" [ngClass]="isDarkTheme ? 'bi-sun-fill' : 'bi-moon-stars-fill'"></i>
+            <i
+              class="bi"
+              [ngClass]="isDarkTheme ? 'bi-sun-fill' : 'bi-moon-stars-fill'"
+            ></i>
           </button>
 
           <a routerLink="/scan-email" class="scan-btn">
@@ -103,4 +110,4 @@
 
 <ng-template #authOnly>
   <router-outlet></router-outlet>
-</ng-template>
+</ng-template>  

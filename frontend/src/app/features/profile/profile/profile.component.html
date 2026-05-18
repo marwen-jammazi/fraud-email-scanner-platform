@@ -1,0 +1,141 @@
+﻿<section class="profile-page">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Account Settings</span>
+      <h1>My Profile</h1>
+      <p>Update your account information, password, and profile picture.</p>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-card">
+    <span class="spinner-border spinner-border-sm me-2"></span>
+    Loading profile...
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success">
+    {{ successMessage }}
+  </div>
+
+  <ng-container *ngIf="profile && !loading">
+    <div class="profile-grid">
+      <article class="profile-card picture-card">
+      <div class="avatar-preview">
+  <img
+    *ngIf="getAvatarUrl(); else avatarFallback"
+    [src]="getAvatarUrl()"
+    alt="Profile picture"
+    (error)="onImageError()"
+  />
+
+  <ng-template #avatarFallback>
+    <i class="bi bi-person-fill"></i>
+  </ng-template>
+</div>
+        <h3>{{ profile.fullName }}</h3>
+        <p>{{ profile.email }}</p>
+
+        <span class="role-pill">{{ profile.role }}</span>
+
+        <div class="upload-box">
+          <label for="profilePicture">Choose profile picture</label>
+          <input
+            id="profilePicture"
+            type="file"
+            accept="image/*"
+            (change)="onFileSelected($event)"
+          />
+
+          <button
+            class="upload-btn"
+            type="button"
+            [disabled]="uploadingPicture"
+            (click)="uploadPicture()"
+          >
+            <i class="bi bi-cloud-arrow-up-fill"></i>
+            {{ uploadingPicture ? "Uploading..." : "Upload Picture" }}
+          </button>
+        </div>
+      </article>
+
+      <article class="profile-card">
+        <div class="section-header">
+          <div>
+            <span class="section-label">Profile Info</span>
+            <h3>Personal Information</h3>
+            <p>Update your name and email address.</p>
+          </div>
+        </div>
+
+        <form class="profile-form" (ngSubmit)="saveProfile()">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input
+              type="text"
+              [(ngModel)]="profileForm.fullName"
+              name="fullName"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              [(ngModel)]="profileForm.email"
+              name="email"
+              required
+            />
+          </div>
+
+          <button class="save-btn" type="submit" [disabled]="savingProfile">
+            {{ savingProfile ? "Saving..." : "Save Profile" }}
+          </button>
+        </form>
+      </article>
+
+      <article class="profile-card">
+        <div class="section-header">
+          <div>
+            <span class="section-label danger-label">Security</span>
+            <h3>Change Password</h3>
+            <p>Update your password securely.</p>
+          </div>
+        </div>
+
+        <div *ngIf="passwordMessage" class="password-message">
+          {{ passwordMessage }}
+        </div>
+
+        <form class="profile-form" (ngSubmit)="changePassword()">
+          <div class="form-group">
+            <label>Current Password</label>
+            <input
+              type="password"
+              [(ngModel)]="passwordForm.currentPassword"
+              name="currentPassword"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label>New Password</label>
+            <input
+              type="password"
+              [(ngModel)]="passwordForm.newPassword"
+              name="newPassword"
+              required
+            />
+          </div>
+
+          <button class="password-btn" type="submit" [disabled]="changingPassword">
+            {{ changingPassword ? "Changing..." : "Change Password" }}
+          </button>
+        </form>
+      </article>
+    </div>
+  </ng-container>
+</section>

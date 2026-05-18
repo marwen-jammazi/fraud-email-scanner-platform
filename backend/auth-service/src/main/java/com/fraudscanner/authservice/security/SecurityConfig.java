@@ -37,12 +37,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Public auth endpoints
+                        // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
 
                         // Admin endpoints: ADMIN only
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Profile endpoints: authenticated users
+                        .requestMatchers("/api/profile/**").authenticated()
 
                         // Other auth-service endpoints
                         .anyRequest().authenticated()

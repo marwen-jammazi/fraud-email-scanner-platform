@@ -127,12 +127,14 @@
   border-radius: 14px;
   background: rgba(56, 189, 248, 0.16);
   color: #bae6fd;
+  font-size: 18px;
 }
 
 .avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  background: transparent;
 }
 
 .user-card strong {

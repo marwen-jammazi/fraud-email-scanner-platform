@@ -1,6 +1,9 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+
 import { AdminGuard } from './core/guards/admin.guard';
+import { AuthGuard } from './core/guards/auth.guard';
+
 import { LoginComponent } from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
 import { DashboardComponent } from './features/dashboard/dashboard/dashboard.component';
@@ -8,8 +11,8 @@ import { ScanEmailComponent } from './features/scanner/scan-email/scan-email.com
 import { EmailListComponent } from './features/emails/email-list/email-list.component';
 import { EmailDetailsComponent } from './features/emails/email-details/email-details.component';
 import { AuditLogsComponent } from './features/audit/audit-logs/audit-logs.component';
-import { AuthGuard } from './core/guards/auth.guard';
 import { UserManagementComponent } from './features/admin/user-management/user-management.component';
+import { ProfileComponent } from './features/profile/profile/profile.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
@@ -35,6 +38,11 @@ const routes: Routes = [
   {
     path: 'emails/:id',
     component: EmailDetailsComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'profile',
+    component: ProfileComponent,
     canActivate: [AuthGuard],
   },
   {

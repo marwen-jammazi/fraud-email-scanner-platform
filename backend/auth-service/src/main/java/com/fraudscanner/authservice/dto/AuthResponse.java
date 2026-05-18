@@ -1,4 +1,4 @@
-﻿package com.fraudscanner.authservice.dto;
+package com.fraudscanner.authservice.dto;
 
 import lombok.*;
 

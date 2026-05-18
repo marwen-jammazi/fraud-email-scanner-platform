@@ -14,9 +14,11 @@ import { ScanEmailComponent } from './features/scanner/scan-email/scan-email.com
 import { EmailListComponent } from './features/emails/email-list/email-list.component';
 import { EmailDetailsComponent } from './features/emails/email-details/email-details.component';
 import { AuditLogsComponent } from './features/audit/audit-logs/audit-logs.component';
+import { UserManagementComponent } from './features/admin/user-management/user-management.component';
+import { ProfileComponent } from './features/profile/profile/profile.component';
+
 
 import { AuthTokenInterceptor } from './core/interceptors/auth-token.interceptor';
-import { UserManagementComponent } from './features/admin/user-management/user-management.component';
 
 @NgModule({
   declarations: [
@@ -30,15 +32,21 @@ import { UserManagementComponent } from './features/admin/user-management/user-m
     EmailDetailsComponent,
     AuditLogsComponent,
     UserManagementComponent,
+    ProfileComponent
   ],
-  imports: [BrowserModule, AppRoutingModule, HttpClientModule, FormsModule],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    HttpClientModule,
+    FormsModule
+  ],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthTokenInterceptor,
-      multi: true,
-    },
+      multi: true
+    }
   ],
-  bootstrap: [AppComponent],
+  bootstrap: [AppComponent]
 })
 export class AppModule {}
