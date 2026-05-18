@@ -1,5 +1,5 @@
 <ng-container *ngIf="isLoggedIn(); else authOnly">
-  <div class="app-shell">
+  <div class="app-shell" [class.dark-shell]="isDarkTheme">
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-icon">
@@ -63,6 +63,11 @@
           </div>
         </a>
 
+        <button class="theme-toggle-btn" type="button" (click)="toggleTheme()">
+          <i class="bi" [ngClass]="isDarkTheme ? 'bi-sun-fill' : 'bi-moon-stars-fill'"></i>
+          {{ isDarkTheme ? "Light Mode" : "Dark Mode" }}
+        </button>
+
         <button class="logout-btn" (click)="logout()">
           <i class="bi bi-box-arrow-left"></i>
           Logout
@@ -78,6 +83,10 @@
         </div>
 
         <div class="topbar-actions">
+          <button class="topbar-theme-btn" type="button" (click)="toggleTheme()">
+            <i class="bi" [ngClass]="isDarkTheme ? 'bi-sun-fill' : 'bi-moon-stars-fill'"></i>
+          </button>
+
           <a routerLink="/scan-email" class="scan-btn">
             <i class="bi bi-plus-circle"></i>
             New Scan

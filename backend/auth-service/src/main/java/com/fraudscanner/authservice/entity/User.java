@@ -1,4 +1,4 @@
-package com.fraudscanner.authservice.entity;
+﻿package com.fraudscanner.authservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,12 +29,13 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    // ✅ Default value for active
     @Builder.Default
     @Column(nullable = false)
     private boolean active = true;
 
-    // ✅ Default value for createdAt
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
+
     @Builder.Default
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

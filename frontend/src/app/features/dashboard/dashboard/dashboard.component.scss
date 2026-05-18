@@ -13,7 +13,7 @@
 .eyebrow {
   display: inline-flex;
   margin-bottom: 8px;
-  color: #0284c7;
+  color: var(--app-primary);
   font-size: 13px;
   font-weight: 900;
   text-transform: uppercase;
@@ -22,7 +22,7 @@
 
 .page-heading h1 {
   margin: 0;
-  color: #0f172a;
+  color: var(--app-text);
   font-size: 36px;
   font-weight: 950;
   letter-spacing: -0.05em;
@@ -30,7 +30,7 @@
 
 .page-heading p {
   margin: 8px 0 0;
-  color: #64748b;
+  color: var(--app-muted);
   font-weight: 600;
 }
 
@@ -42,24 +42,30 @@
   padding: 0 18px;
   border: 0;
   border-radius: 999px;
-  color: #0f172a;
+  color: var(--app-text);
   font-weight: 850;
-  background: #ffffff;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--shadow-soft);
+  transition: 0.2s ease;
+}
+
+.refresh-btn:hover {
+  transform: translateY(-1px);
 }
 
 .loading-card,
 .panel,
 .kpi-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--shadow-soft);
 }
 
 .loading-card {
   padding: 18px;
   border-radius: 20px;
-  color: #475569;
+  color: var(--app-muted);
   font-weight: 750;
 }
 
@@ -78,6 +84,15 @@
   border-radius: 26px;
   overflow: hidden;
   position: relative;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
 }
 
 .kpi-card::after {
@@ -102,7 +117,7 @@
 }
 
 .kpi-card span {
-  color: #64748b;
+  color: var(--app-muted);
   font-size: 13px;
   font-weight: 850;
 }
@@ -110,55 +125,55 @@
 .kpi-card strong {
   display: block;
   margin-top: 4px;
-  color: #0f172a;
+  color: var(--app-text);
   font-size: 30px;
   font-weight: 950;
   letter-spacing: -0.05em;
 }
 
 .kpi-card.primary .kpi-icon {
-  color: #0369a1;
-  background: #e0f2fe;
+  color: var(--app-primary);
+  background: var(--app-primary-soft);
 }
 
 .kpi-card.primary::after {
-  background: #0ea5e9;
+  background: var(--app-primary);
 }
 
 .kpi-card.danger .kpi-icon {
-  color: #b91c1c;
-  background: #fee2e2;
+  color: var(--app-danger);
+  background: var(--app-danger-soft);
 }
 
 .kpi-card.danger::after {
-  background: #ef4444;
+  background: var(--app-danger);
 }
 
 .kpi-card.warning .kpi-icon {
-  color: #b45309;
-  background: #fef3c7;
+  color: var(--app-warning);
+  background: var(--app-warning-soft);
 }
 
 .kpi-card.warning::after {
-  background: #f59e0b;
+  background: var(--app-warning);
 }
 
 .kpi-card.success .kpi-icon {
-  color: #15803d;
-  background: #dcfce7;
+  color: var(--app-success);
+  background: var(--app-success-soft);
 }
 
 .kpi-card.success::after {
-  background: #22c55e;
+  background: var(--app-success);
 }
 
 .kpi-card.dark .kpi-icon {
-  color: #0f172a;
-  background: #e2e8f0;
+  color: var(--app-text);
+  background: var(--app-surface-soft);
 }
 
 .kpi-card.dark::after {
-  background: #0f172a;
+  background: var(--app-text);
 }
 
 .analytics-grid {
@@ -170,16 +185,20 @@
 .panel {
   border-radius: 28px;
   overflow: hidden;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .panel-header {
   padding: 22px 24px;
-  border-bottom: 1px solid #edf2f7;
+  border-bottom: 1px solid var(--app-border);
 }
 
 .panel-header h3 {
   margin: 0;
-  color: #0f172a;
+  color: var(--app-text);
   font-size: 19px;
   font-weight: 950;
   letter-spacing: -0.035em;
@@ -187,13 +206,14 @@
 
 .panel-header p {
   margin: 6px 0 0;
-  color: #64748b;
+  color: var(--app-muted);
   font-weight: 600;
 }
 
 .chart-box {
   height: 320px;
   padding: 22px;
+  background: var(--app-surface);
 }
 
 .table {
@@ -202,18 +222,20 @@
 
 .table thead th {
   padding: 16px 24px;
-  color: #64748b;
+  color: var(--app-muted);
   font-size: 12px;
   font-weight: 950;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  background: #f8fafc;
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
 }
 
 .table tbody td {
   padding: 18px 24px;
-  color: #334155;
+  color: var(--app-text);
   font-weight: 700;
+  border-color: var(--app-border);
 }
 
 .sender-cell {
@@ -228,8 +250,8 @@
   display: grid;
   place-items: center;
   border-radius: 14px;
-  color: #b91c1c;
-  background: #fee2e2;
+  color: var(--app-danger);
+  background: var(--app-danger-soft);
 }
 
 .count-pill,
@@ -244,13 +266,72 @@
 }
 
 .count-pill {
-  color: #0369a1;
-  background: #e0f2fe;
+  color: var(--app-primary);
+  background: var(--app-primary-soft);
 }
 
 .risk-pill {
-  color: #991b1b;
-  background: #fee2e2;
+  color: var(--app-danger);
+  background: var(--app-danger-soft);
+}
+
+.text-muted {
+  color: var(--app-muted) !important;
+}
+
+/* Dark theme chart/table polish */
+
+body.dark-theme .dashboard-page canvas {
+  filter: brightness(0.94) contrast(1.05);
+}
+
+body.dark-theme .chart-box {
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(56, 189, 248, 0.05),
+      transparent 28%
+    ),
+    var(--app-surface);
+}
+
+body.dark-theme .kpi-card {
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(56, 189, 248, 0.04),
+      transparent 28%
+    ),
+    var(--app-surface);
+}
+
+body.dark-theme .panel {
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(56, 189, 248, 0.04),
+      transparent 28%
+    ),
+    var(--app-surface);
+}
+
+body.dark-theme .refresh-btn {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+body.dark-theme .table thead th {
+  background: var(--app-surface-soft);
+}
+
+body.dark-theme .table tbody tr:hover {
+  background: rgba(56, 189, 248, 0.04);
+}
+
+body.dark-theme .sender-cell span,
+body.dark-theme .sender-cell strong {
+  color: var(--app-text);
 }
 
 @media (max-width: 1200px) {

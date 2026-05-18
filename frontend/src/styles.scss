@@ -2,11 +2,59 @@
 @import "bootstrap-icons/font/bootstrap-icons.css";
 
 :root {
+  --app-bg: #f5f7fb;
+  --app-surface: #ffffff;
+  --app-surface-soft: #f8fafc;
+  --app-border: #e5e7eb;
+  --app-text: #0f172a;
+  --app-muted: #64748b;
+  --app-muted-2: #94a3b8;
+
+  --app-primary: #0369a1;
+  --app-primary-soft: #e0f2fe;
+
+  --app-danger: #dc2626;
+  --app-danger-soft: #fee2e2;
+
+  --app-warning: #f59e0b;
+  --app-warning-soft: #fef3c7;
+
+  --app-success: #16a34a;
+  --app-success-soft: #dcfce7;
+
+  --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.06);
+  --shadow-medium: 0 24px 70px rgba(15, 23, 42, 0.12);
+
   --auth-bg-1: #0f172a;
   --auth-bg-2: #111827;
   --auth-bg-3: #1e293b;
   --primary-glow: rgba(56, 189, 248, 0.45);
   --danger-glow: rgba(248, 113, 113, 0.35);
+}
+
+body.dark-theme {
+  --app-bg: #020617;
+  --app-surface: #0f172a;
+  --app-surface-soft: #111827;
+  --app-border: rgba(148, 163, 184, 0.18);
+  --app-text: #e5e7eb;
+  --app-muted: #94a3b8;
+  --app-muted-2: #64748b;
+
+  --app-primary: #38bdf8;
+  --app-primary-soft: rgba(56, 189, 248, 0.16);
+
+  --app-danger: #f87171;
+  --app-danger-soft: rgba(248, 113, 113, 0.14);
+
+  --app-warning: #fbbf24;
+  --app-warning-soft: rgba(251, 191, 36, 0.14);
+
+  --app-success: #4ade80;
+  --app-success-soft: rgba(74, 222, 128, 0.14);
+
+  --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.28);
+  --shadow-medium: 0 24px 70px rgba(0, 0, 0, 0.38);
 }
 
 * {
@@ -15,9 +63,12 @@
 
 body {
   margin: 0;
-  background: #f5f7fb;
+  background: var(--app-bg);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #111827;
+  color: var(--app-text);
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
 }
 
 a {
@@ -30,4 +81,122 @@ a {
 
 .btn {
   border-radius: 14px;
+}
+
+/* Global dark theme helpers for Bootstrap-like elements */
+body.dark-theme .card,
+body.dark-theme .modal-content,
+body.dark-theme .dropdown-menu {
+  background: var(--app-surface);
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+
+body.dark-theme .table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--app-text);
+  --bs-table-border-color: var(--app-border);
+}
+
+body.dark-theme .table thead th {
+  background: var(--app-surface-soft) !important;
+  color: var(--app-muted) !important;
+}
+
+body.dark-theme .table tbody td {
+  color: var(--app-text) !important;
+  border-color: var(--app-border);
+}
+
+body.dark-theme .form-control,
+body.dark-theme input,
+body.dark-theme textarea,
+body.dark-theme select {
+  background: var(--app-surface-soft) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-border) !important;
+}
+
+body.dark-theme .form-control::placeholder,
+body.dark-theme input::placeholder,
+body.dark-theme textarea::placeholder {
+  color: var(--app-muted-2) !important;
+}
+
+body.dark-theme .alert-danger {
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.35);
+  border-color: rgba(248, 113, 113, 0.25);
+}
+
+body.dark-theme .alert-success {
+  color: #bbf7d0;
+  background: rgba(20, 83, 45, 0.35);
+  border-color: rgba(74, 222, 128, 0.25);
+}
+
+/* Generic cards used across pages */
+body.dark-theme .kpi-card,
+body.dark-theme .panel,
+body.dark-theme .scan-card,
+body.dark-theme .result-card,
+body.dark-theme .emails-panel,
+body.dark-theme .details-card,
+body.dark-theme .feedback-card,
+body.dark-theme .edit-email-card,
+body.dark-theme .audit-panel,
+body.dark-theme .users-panel,
+body.dark-theme .edit-panel,
+body.dark-theme .profile-card,
+body.dark-theme .loading-card {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+body.dark-theme h1,
+body.dark-theme h2,
+body.dark-theme h3,
+body.dark-theme h4,
+body.dark-theme strong {
+  color: var(--app-text) !important;
+}
+
+body.dark-theme p,
+body.dark-theme span,
+body.dark-theme label,
+body.dark-theme small {
+  border-color: var(--app-border);
+}
+
+/* Common soft boxes */
+body.dark-theme .meta-grid div,
+body.dark-theme .mini-info div,
+body.dark-theme .breakdown-card,
+body.dark-theme .ml-panel,
+body.dark-theme .reasons-box,
+body.dark-theme .ml-reasons-box,
+body.dark-theme .search-box,
+body.dark-theme .toolbar select,
+body.dark-theme .event-filter,
+body.dark-theme .filter-select,
+body.dark-theme .modal-email-preview,
+body.dark-theme .upload-box,
+body.dark-theme .password-message {
+  background: var(--app-surface-soft) !important;
+  border-color: var(--app-border) !important;
+}
+
+body.dark-theme .body-box {
+  background: #020617 !important;
+  border: 1px solid var(--app-border);
+}
+
+body.dark-theme .body-box pre {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .delete-modal {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
 }

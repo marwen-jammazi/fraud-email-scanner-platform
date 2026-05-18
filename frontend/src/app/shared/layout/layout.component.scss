@@ -2,7 +2,8 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 290px 1fr;
-  background: #f4f7fb;
+  background: var(--app-bg);
+  transition: background 0.25s ease;
 }
 
 .sidebar {
@@ -152,14 +153,33 @@
   font-weight: 800;
 }
 
+.theme-toggle-btn,
 .logout-btn {
   height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
   border: 0;
   border-radius: 16px;
-  color: #fecaca;
   font-weight: 850;
-  background: rgba(239, 68, 68, 0.12);
   transition: 0.2s ease;
+}
+
+.theme-toggle-btn {
+  color: #bae6fd;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(125, 211, 252, 0.16);
+}
+
+.theme-toggle-btn:hover {
+  color: #ffffff;
+  background: rgba(56, 189, 248, 0.22);
+}
+
+.logout-btn {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.12);
 }
 
 .logout-btn:hover {
@@ -178,14 +198,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(255, 255, 255, 0.86);
-  border-bottom: 1px solid #e5e7eb;
+  background: color-mix(in srgb, var(--app-surface) 88%, transparent);
+  border-bottom: 1px solid var(--app-border);
   backdrop-filter: blur(20px);
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .topbar h2 {
   margin: 0;
-  color: #0f172a;
+  color: var(--app-text);
   font-size: 24px;
   font-weight: 950;
   letter-spacing: -0.04em;
@@ -193,8 +216,31 @@
 
 .topbar p {
   margin: 5px 0 0;
-  color: #64748b;
+  color: var(--app-muted);
   font-weight: 600;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-theme-btn {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: var(--app-primary);
+  background: var(--app-primary-soft);
+  font-size: 18px;
+  transition: 0.2s ease;
+}
+
+.topbar-theme-btn:hover {
+  transform: translateY(-1px);
 }
 
 .scan-btn {
@@ -218,6 +264,8 @@
 
 .content {
   padding: 30px 34px;
+  background: var(--app-bg);
+  transition: background 0.25s ease;
 }
 
 @media (max-width: 900px) {
@@ -235,5 +283,10 @@
     gap: 16px;
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 }

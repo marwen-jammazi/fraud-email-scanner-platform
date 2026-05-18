@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -6,8 +6,17 @@ import { AuthService } from '../../core/services/auth.service';
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.scss'],
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit {
+  isDarkTheme = false;
+
   constructor(private authService: AuthService) {}
+
+  ngOnInit(): void {
+    const savedTheme = localStorage.getItem('theme');
+
+    this.isDarkTheme = savedTheme === 'dark';
+    this.applyTheme();
+  }
 
   isLoggedIn(): boolean {
     return this.authService.isLoggedIn();
@@ -41,6 +50,16 @@ export class LayoutComponent {
     }
 
     return `http://localhost:8081${url}`;
+  }
+
+  toggleTheme(): void {
+    this.isDarkTheme = !this.isDarkTheme;
+    localStorage.setItem('theme', this.isDarkTheme ? 'dark' : 'light');
+    this.applyTheme();
+  }
+
+  private applyTheme(): void {
+    document.body.classList.toggle('dark-theme', this.isDarkTheme);
   }
 
   logout(): void {

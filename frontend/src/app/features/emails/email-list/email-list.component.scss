@@ -11,7 +11,7 @@
 }
 
 .eyebrow {
-  color: #0284c7;
+  color: var(--app-primary);
   font-size: 13px;
   font-weight: 900;
   text-transform: uppercase;
@@ -20,7 +20,7 @@
 
 .page-heading h1 {
   margin: 6px 0 0;
-  color: #0f172a;
+  color: var(--app-text);
   font-size: 36px;
   font-weight: 950;
   letter-spacing: -0.05em;
@@ -28,7 +28,7 @@
 
 .page-heading p {
   margin: 8px 0 0;
-  color: #64748b;
+  color: var(--app-muted);
   font-weight: 600;
 }
 
@@ -39,6 +39,7 @@
   border: 0;
   border-radius: 999px;
   font-weight: 900;
+  transition: 0.2s ease;
 }
 
 .refresh-btn,
@@ -51,14 +52,23 @@
 }
 
 .refresh-btn {
-  color: #0f172a;
-  background: #ffffff;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  color: var(--app-text);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--shadow-soft);
+}
+
+.refresh-btn:hover,
+.new-scan-btn:hover,
+.details-btn:hover,
+.delete-email-btn:hover {
+  transform: translateY(-1px);
 }
 
 .new-scan-btn {
   color: #ffffff;
   background: linear-gradient(135deg, #020617, #0369a1);
+  box-shadow: 0 14px 28px rgba(2, 6, 23, 0.16);
 }
 
 .toolbar {
@@ -76,56 +86,84 @@
   gap: 12px;
   padding: 0 16px;
   border-radius: 18px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--shadow-soft);
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .search-box i {
-  color: #64748b;
+  color: var(--app-muted);
 }
 
 .search-box input {
   width: 100%;
   border: 0;
   outline: 0;
-  color: #0f172a;
+  color: var(--app-text);
+  background: transparent;
   font-weight: 700;
+}
+
+.search-box input::placeholder {
+  color: var(--app-muted-2);
 }
 
 .loading-card,
 .emails-panel {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--shadow-soft);
 }
 
 .loading-card {
   padding: 18px;
   border-radius: 20px;
-  color: #475569;
+  color: var(--app-muted);
   font-weight: 800;
 }
 
 .emails-panel {
   border-radius: 28px;
   overflow: hidden;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.table {
+  margin: 0;
 }
 
 .table thead th {
   padding: 16px 24px;
-  color: #64748b;
+  color: var(--app-muted);
   font-size: 12px;
   font-weight: 950;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  background: #f8fafc;
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
 }
 
 .table tbody td {
   padding: 18px 24px;
-  color: #334155;
+  color: var(--app-text);
   font-weight: 700;
+  border-color: var(--app-border);
+  vertical-align: middle;
+}
+
+.table tbody tr {
+  transition: 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background: rgba(56, 189, 248, 0.04);
 }
 
 .subject-cell {
@@ -140,20 +178,20 @@
   display: grid;
   place-items: center;
   border-radius: 15px;
-  color: #b91c1c;
-  background: #fee2e2;
+  color: var(--app-danger);
+  background: var(--app-danger-soft);
 }
 
 .subject-cell strong {
   display: block;
-  color: #0f172a;
+  color: var(--app-text);
   font-weight: 950;
 }
 
 .subject-cell span {
   display: block;
   margin-top: 2px;
-  color: #94a3b8;
+  color: var(--app-muted-2);
   font-size: 12px;
   font-weight: 800;
 }
@@ -169,33 +207,33 @@
 }
 
 .status-flagged {
-  color: #991b1b;
-  background: #fee2e2;
+  color: var(--app-danger);
+  background: var(--app-danger-soft);
 }
 
 .status-suspicious {
-  color: #92400e;
-  background: #fef3c7;
+  color: var(--app-warning);
+  background: var(--app-warning-soft);
 }
 
 .status-safe {
-  color: #166534;
-  background: #dcfce7;
+  color: var(--app-success);
+  background: var(--app-success-soft);
 }
 
 .status-neutral {
-  color: #334155;
-  background: #e2e8f0;
+  color: var(--app-text);
+  background: var(--app-surface-soft);
 }
 
 .risk-score strong {
   display: block;
-  color: #0f172a;
+  color: var(--app-text);
   font-weight: 950;
 }
 
 .risk-score span {
-  color: #64748b;
+  color: var(--app-muted);
   font-size: 12px;
   font-weight: 850;
 }
@@ -217,43 +255,51 @@
 }
 
 .details-btn {
-  color: #0369a1;
-  background: #e0f2fe;
+  color: var(--app-primary);
+  background: var(--app-primary-soft);
+}
+
+.details-btn:hover {
+  color: #ffffff;
+  background: var(--app-primary);
 }
 
 .delete-email-btn {
-  color: #991b1b;
-  background: #fee2e2;
+  color: var(--app-danger);
+  background: var(--app-danger-soft);
 }
 
 .delete-email-btn:hover {
   color: #ffffff;
-  background: #dc2626;
+  background: var(--app-danger);
 }
 
 .empty-row {
   padding: 52px !important;
   text-align: center;
-  color: #64748b !important;
+  color: var(--app-muted) !important;
 }
 
 .empty-row i {
   display: block;
   margin-bottom: 12px;
-  color: #22c55e;
+  color: var(--app-success);
   font-size: 38px;
 }
 
 .empty-row strong {
   display: block;
-  color: #0f172a;
+  color: var(--app-text);
   font-size: 18px;
 }
 
 .empty-row span {
   display: block;
   margin-top: 6px;
+  color: var(--app-muted);
 }
+
+/* Delete modal */
 
 .delete-modal-backdrop {
   position: fixed;
@@ -270,11 +316,9 @@
   width: min(520px, 100%);
   padding: 28px;
   border-radius: 30px;
-  background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow:
-    0 40px 90px rgba(2, 6, 23, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--shadow-medium);
   animation: modalPop 0.22s ease-out;
 }
 
@@ -297,8 +341,8 @@
   place-items: center;
   margin: 0 auto 18px;
   border-radius: 24px;
-  color: #dc2626;
-  background: #fee2e2;
+  color: var(--app-danger);
+  background: var(--app-danger-soft);
   font-size: 30px;
   box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.08);
 }
@@ -308,7 +352,7 @@
 }
 
 .modal-eyebrow {
-  color: #dc2626;
+  color: var(--app-danger);
   font-size: 12px;
   font-weight: 950;
   text-transform: uppercase;
@@ -317,7 +361,7 @@
 
 .delete-modal-content h3 {
   margin: 8px 0 0;
-  color: #0f172a;
+  color: var(--app-text);
   font-size: 28px;
   font-weight: 950;
   letter-spacing: -0.045em;
@@ -326,13 +370,13 @@
 .delete-modal-content p {
   margin: 14px auto 0;
   max-width: 420px;
-  color: #64748b;
+  color: var(--app-muted);
   line-height: 1.7;
   font-weight: 650;
 }
 
 .delete-modal-content p strong {
-  color: #0f172a;
+  color: var(--app-text);
 }
 
 .modal-email-preview {
@@ -340,13 +384,13 @@
   padding: 16px;
   border-radius: 18px;
   text-align: left;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border);
 }
 
 .modal-email-preview span {
   display: block;
-  color: #64748b;
+  color: var(--app-muted);
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
@@ -356,7 +400,7 @@
 .modal-email-preview strong {
   display: block;
   margin-top: 5px;
-  color: #0f172a;
+  color: var(--app-text);
   font-weight: 950;
   overflow-wrap: anywhere;
 }
@@ -378,8 +422,9 @@
 }
 
 .modal-cancel-btn {
-  color: #334155;
-  background: #e2e8f0;
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border);
 }
 
 .modal-delete-btn {
@@ -393,6 +438,28 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+/* Dark mode polish */
+
+body.dark-theme .emails-panel {
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.04), transparent 28%),
+    var(--app-surface);
+}
+
+body.dark-theme .search-box {
+  background: var(--app-surface);
+}
+
+body.dark-theme .table tbody tr:hover {
+  background: rgba(56, 189, 248, 0.05);
+}
+
+body.dark-theme .delete-modal {
+  background:
+    radial-gradient(circle at top right, rgba(248, 113, 113, 0.06), transparent 28%),
+    var(--app-surface);
 }
 
 @media (max-width: 760px) {
