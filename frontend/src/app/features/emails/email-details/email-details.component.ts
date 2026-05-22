@@ -190,6 +190,14 @@ export class EmailDetailsComponent implements OnInit {
       return;
     }
 
+    const userIdValue = localStorage.getItem('userId');
+    const userId = userIdValue ? Number(userIdValue) : null;
+
+    const performedBy =
+      localStorage.getItem('fullName') ||
+      localStorage.getItem('email') ||
+      'Unknown User';
+
     this.feedbackLoading = true;
     this.feedbackSuccessMessage = '';
     this.feedbackErrorMessage = '';
@@ -197,7 +205,8 @@ export class EmailDetailsComponent implements OnInit {
     this.scannerService
       .submitFeedback({
         emailId,
-        userId: Number(localStorage.getItem('userId')) || null,
+        userId,
+        performedBy,
         label,
         comment: this.feedbackComment,
       })

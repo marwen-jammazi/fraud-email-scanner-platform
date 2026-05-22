@@ -1,4 +1,4 @@
-package     com.fraudscanner.scannerservice.enums;
+package com.fraudscanner.scannerservice.enums;
 
 public enum RiskLevel {
     LOW,

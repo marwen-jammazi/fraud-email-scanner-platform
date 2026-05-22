@@ -10,6 +10,7 @@ export interface EmailScanRequest {
   body: string;
   receivedAt: string;
   userId?: number;
+  performedBy?: string;
 }
 
 export interface ScanResponse {
@@ -32,10 +33,10 @@ export interface ScanResponse {
 export interface FeedbackRequest {
   emailId: number;
   userId?: number | null;
+  performedBy?: string;
   label: string;
   comment?: string;
 }
-
 export interface UpdateEmailRequest {
   sender: string;
   receiverEmail: string;

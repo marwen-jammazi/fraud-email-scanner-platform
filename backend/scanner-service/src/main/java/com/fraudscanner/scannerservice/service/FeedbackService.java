@@ -1,6 +1,5 @@
 package com.fraudscanner.scannerservice.service;
 
-
 import com.fraudscanner.scannerservice.client.AuditServiceClient;
 import com.fraudscanner.scannerservice.dto.AuditLogRequest;
 import com.fraudscanner.scannerservice.dto.FeedbackRequest;
@@ -30,10 +29,12 @@ public class FeedbackService {
     }
 
     public String submitFeedback(FeedbackRequest request) {
-        EmailMessage emailMessage = emailMessageRepository.findById(request.getEmailId())
+        EmailMessage emailMessage = emailMessageRepository
+                .findById(request.getEmailId())
                 .orElseThrow(() -> new RuntimeException("Email not found"));
 
-        // Build UserFeedback using Lombok builder
+        String reviewerName = resolvePerformedBy(request.getPerformedBy());
+
         UserFeedback feedback = UserFeedback.builder()
                 .userId(request.getUserId())
                 .label(request.getLabel())
@@ -43,25 +44,32 @@ public class FeedbackService {
 
         userFeedbackRepository.save(feedback);
 
-        // Resolve AuditEventType based on feedback label
         AuditEventType eventType = AuditEventType.FEEDBACK_SUBMITTED;
+
         if (request.getLabel() == FeedbackLabel.FALSE_POSITIVE) {
             eventType = AuditEventType.EMAIL_MARKED_FALSE_POSITIVE;
         } else if (request.getLabel() == FeedbackLabel.CONFIRMED_FRAUD) {
             eventType = AuditEventType.EMAIL_CONFIRMED_FRAUD;
         }
 
-        // Build AuditLogRequest using Lombok builder
         AuditLogRequest auditLogRequest = AuditLogRequest.builder()
                 .emailId(emailMessage.getId())
                 .userId(request.getUserId())
                 .eventType(eventType)
-                .performedBy("user")
-                .details("Feedback submitted: " + request.getLabel())
+                .performedBy(reviewerName)
+                .details("Feedback submitted by " + reviewerName + ": " + request.getLabel())
                 .build();
 
         auditServiceClient.createAuditLog(auditLogRequest);
 
         return "Feedback submitted successfully";
+    }
+
+    private String resolvePerformedBy(String performedBy) {
+        if (performedBy == null || performedBy.isBlank()) {
+            return "Unknown User";
+        }
+
+        return performedBy.trim();
     }
 }

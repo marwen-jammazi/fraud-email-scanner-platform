@@ -20,8 +20,17 @@ public class EmailMessage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /*
+     * Owner of the scanned email.
+     * Used to ensure each normal user sees only their own scans.
+     */
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column(nullable = false)
     private String sender;
 
+    @Column(name = "receiver_email", nullable = false)
     private String receiverEmail;
 
     @Column(nullable = false)
@@ -30,12 +39,22 @@ public class EmailMessage {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String body;
 
-    @Column(name = "user_id")
-    private Long userId;
-
     @Builder.Default
+    @Column(name = "received_at", nullable = false)
     private LocalDateTime receivedAt = LocalDateTime.now();
 
     @Builder.Default
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @PrePersist
+    public void onCreate() {
+        if (receivedAt == null) {
+            receivedAt = LocalDateTime.now();
+        }
+
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 }

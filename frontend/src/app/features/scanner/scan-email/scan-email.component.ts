@@ -29,10 +29,10 @@ export class ScanEmailComponent {
     this.result = null;
 
     if (
-      !this.form.sender ||
-      !this.form.receiverEmail ||
-      !this.form.subject ||
-      !this.form.body
+      !this.form.sender.trim() ||
+      !this.form.receiverEmail.trim() ||
+      !this.form.subject.trim() ||
+      !this.form.body.trim()
     ) {
       this.errorMessage = 'Please fill all fields before scanning.';
       return;
@@ -41,19 +41,23 @@ export class ScanEmailComponent {
     const userIdValue = localStorage.getItem('userId');
     const userId = userIdValue ? Number(userIdValue) : undefined;
 
-    if (!userId) {
+    if (!userId || Number.isNaN(userId)) {
       this.errorMessage =
         'Cannot scan email: user session is missing. Please login again.';
       return;
     }
 
-    this.loading = true;
-
     const payload: EmailScanRequest = {
-      ...this.form,
+      sender: this.form.sender.trim(),
+      receiverEmail: this.form.receiverEmail.trim(),
+      subject: this.form.subject.trim(),
+      body: this.form.body.trim(),
       receivedAt: this.getCurrentLocalDateTime(),
       userId,
+      performedBy: this.getCurrentUserName(),
     };
+
+    this.loading = true;
 
     this.scannerService.scanEmail(payload).subscribe({
       next: (response) => {
@@ -82,11 +86,8 @@ export class ScanEmailComponent {
   }
 
   getMlProbabilityPercent(): number {
-    if (!this.result?.mlFraudProbability) {
-      return 0;
-    }
-
-    return Math.round(this.result.mlFraudProbability * 100);
+    const probability = this.result?.mlFraudProbability ?? 0;
+    return Math.round(probability * 100);
   }
 
   getScoreWidth(score?: number): string {
@@ -97,10 +98,17 @@ export class ScanEmailComponent {
   getRiskClass(value?: string): string {
     const risk = (value || '').toUpperCase();
 
-    if (risk.includes('HIGH') || risk.includes('FRAUD')) return 'danger';
-    if (risk.includes('MEDIUM') || risk.includes('SUSPICIOUS'))
+    if (risk.includes('HIGH') || risk.includes('FRAUD')) {
+      return 'danger';
+    }
+
+    if (risk.includes('MEDIUM') || risk.includes('SUSPICIOUS')) {
       return 'warning';
-    if (risk.includes('LOW') || risk.includes('SAFE')) return 'success';
+    }
+
+    if (risk.includes('LOW') || risk.includes('SAFE')) {
+      return 'success';
+    }
 
     return 'neutral';
   }
@@ -108,16 +116,39 @@ export class ScanEmailComponent {
   getStatusClass(value?: string): string {
     const status = (value || '').toUpperCase();
 
-    if (status === 'FLAGGED') return 'danger';
-    if (status === 'SUSPICIOUS') return 'warning';
-    if (status === 'SAFE') return 'success';
+    if (status === 'FLAGGED') {
+      return 'danger';
+    }
+
+    if (status === 'SUSPICIOUS') {
+      return 'warning';
+    }
+
+    if (status === 'SAFE') {
+      return 'success';
+    }
 
     return 'neutral';
   }
 
+  private getCurrentUserName(): string {
+    const fullName = localStorage.getItem('fullName');
+    const email = localStorage.getItem('email');
+
+    if (fullName && fullName.trim()) {
+      return fullName.trim();
+    }
+
+    if (email && email.trim()) {
+      return email.trim();
+    }
+
+    return 'Unknown User';
+  }
+
   private getCurrentLocalDateTime(): string {
     const now = new Date();
-    const pad = (value: number) => value.toString().padStart(2, '0');
+    const pad = (value: number): string => value.toString().padStart(2, '0');
 
     return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
       now.getDate(),

@@ -44,6 +44,7 @@ public class EmailScanService {
     }
 
     public ScanResponse scanEmail(EmailScanRequest request) {
+        String scannerName = resolvePerformedBy(request.getPerformedBy());
 
         EmailMessage savedEmail = emailMessageRepository.save(
                 EmailMessage.builder()
@@ -52,17 +53,20 @@ public class EmailScanService {
                         .subject(request.getSubject())
                         .body(request.getBody())
                         .userId(request.getUserId())
-                        .receivedAt(request.getReceivedAt() != null
-                                ? request.getReceivedAt()
-                                : LocalDateTime.now())
+                        .receivedAt(
+                                request.getReceivedAt() != null
+                                        ? request.getReceivedAt()
+                                        : LocalDateTime.now()
+                        )
                         .build()
         );
 
-        RuleDetectionService.DetectionResult detectionResult = ruleDetectionService.analyze(
-                request.getSender(),
-                request.getSubject(),
-                request.getBody()
-        );
+        RuleDetectionService.DetectionResult detectionResult =
+                ruleDetectionService.analyze(
+                        request.getSender(),
+                        request.getSubject(),
+                        request.getBody()
+                );
 
         int ruleRiskScore = detectionResult.getRiskScore();
 
@@ -109,13 +113,20 @@ public class EmailScanService {
         AuditLogRequest auditLogRequest = AuditLogRequest.builder()
                 .emailId(savedEmail.getId())
                 .userId(request.getUserId())
-                .eventType(finalStatus == EmailStatus.FLAGGED
-                        ? AuditEventType.EMAIL_FLAGGED
-                        : AuditEventType.EMAIL_SCANNED)
-                .performedBy("scanner-service")
-                .details(finalStatus == EmailStatus.FLAGGED
-                        ? "Email flagged with final risk score " + finalRiskScore
-                        : "Email scanned with final status " + finalStatus + " and final risk score " + finalRiskScore)
+                .eventType(
+                        finalStatus == EmailStatus.FLAGGED
+                                ? AuditEventType.EMAIL_FLAGGED
+                                : AuditEventType.EMAIL_SCANNED
+                )
+                .performedBy(scannerName)
+                .details(
+                        finalStatus == EmailStatus.FLAGGED
+                                ? "Email flagged by " + scannerName
+                                + " with final risk score " + finalRiskScore
+                                : "Email scanned by " + scannerName
+                                + " with final status " + finalStatus
+                                + " and final risk score " + finalRiskScore
+                )
                 .build();
 
         auditServiceClient.createAuditLog(auditLogRequest);
@@ -136,6 +147,14 @@ public class EmailScanService {
                 .ruleRiskScore(ruleRiskScore)
                 .finalRiskScore(finalRiskScore)
                 .build();
+    }
+
+    private String resolvePerformedBy(String performedBy) {
+        if (performedBy == null || performedBy.isBlank()) {
+            return "Unknown User";
+        }
+
+        return performedBy.trim();
     }
 
     private int calculateFinalRiskScore(int ruleScore, Double mlProbability) {

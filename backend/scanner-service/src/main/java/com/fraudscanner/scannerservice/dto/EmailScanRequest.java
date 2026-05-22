@@ -16,6 +16,12 @@ public class EmailScanRequest {
 
     private Long userId;
 
+    /*
+     * Full name of the logged-in user who launched the scan.
+     * Used in audit logs as Scanner Name.
+     */
+    private String performedBy;
+
     @NotBlank(message = "Sender is required")
     private String sender;
 

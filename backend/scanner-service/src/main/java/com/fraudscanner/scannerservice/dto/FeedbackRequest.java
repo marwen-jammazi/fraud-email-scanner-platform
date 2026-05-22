@@ -2,10 +2,10 @@ package com.fraudscanner.scannerservice.dto;
 
 import com.fraudscanner.scannerservice.enums.FeedbackLabel;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -17,6 +17,8 @@ public class FeedbackRequest {
     private Long emailId;
 
     private Long userId;
+
+    private String performedBy;
 
     @NotNull(message = "Feedback label is required")
     private FeedbackLabel label;

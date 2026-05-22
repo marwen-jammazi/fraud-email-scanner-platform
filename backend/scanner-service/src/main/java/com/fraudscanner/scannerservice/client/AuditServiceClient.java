@@ -2,26 +2,27 @@ package com.fraudscanner.scannerservice.client;
 
 import com.fraudscanner.scannerservice.dto.AuditLogRequest;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
-@Component
+@Service
 public class AuditServiceClient {
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
 
-    @Value("${services.audit.base-url}")
-    private String auditBaseUrl;
-
-    public AuditServiceClient(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+    public AuditServiceClient(
+            @Value("${services.audit-service.url:http://localhost:8083}") String auditServiceUrl
+    ) {
+        this.restClient = RestClient.builder()
+                .baseUrl(auditServiceUrl)
+                .build();
     }
 
     public void createAuditLog(AuditLogRequest request) {
-        try {
-            restTemplate.postForEntity(auditBaseUrl, request, Void.class);
-        } catch (Exception exception) {
-            System.err.println("Failed to send audit log: " + exception.getMessage());
-        }
+        restClient.post()
+                .uri("/api/audit")
+                .body(request)
+                .retrieve()
+                .toBodilessEntity();
     }
 }

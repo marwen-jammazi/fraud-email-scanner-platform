@@ -2,52 +2,70 @@ package com.fraudscanner.scannerservice.client;
 
 import com.fraudscanner.scannerservice.dto.MlPredictionRequest;
 import com.fraudscanner.scannerservice.dto.MlPredictionResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
+import java.util.List;
 
 @Slf4j
-@Component
-@RequiredArgsConstructor
+@Service
 public class MlServiceClient {
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
 
-    @Value("${ml.service.url:http://localhost:8000}")
-    private String mlServiceUrl;
+    public MlServiceClient(
+            @Value("${services.ml-service.url:http://localhost:8000}") String mlServiceUrl
+    ) {
+        this.restClient = RestClient.builder()
+                .baseUrl(mlServiceUrl)
+                .build();
+    }
 
     public MlPredictionResponse predict(MlPredictionRequest request) {
-        String url = mlServiceUrl + "/api/ml/predict";
-
         try {
-            MlPredictionResponse response = restTemplate.postForObject(
-                    url,
-                    request,
-                    MlPredictionResponse.class
-            );
+            log.info("Sending email content to ML service for prediction.");
+
+            MlPredictionResponse response = restClient.post()
+                    .uri("/api/ml/predict")
+                    .body(request)
+                    .retrieve()
+                    .body(MlPredictionResponse.class);
 
             if (response == null) {
-                return fallback("ML service returned empty response");
+                log.warn("ML service returned an empty response.");
+                return buildFallbackResponse("ML service returned an empty response");
             }
+
+            log.info(
+                    "ML prediction received successfully. Prediction: {}, probability: {}, risk level: {}",
+                    response.getPrediction(),
+                    response.getFraudProbability(),
+                    response.getRiskLevel()
+            );
 
             return response;
 
         } catch (Exception exception) {
-            log.error("Failed to call ML service: {}", exception.getMessage());
+            log.error(
+                    "ML service request failed. Falling back to rule-based analysis. Error: {}",
+                    exception.getMessage()
+            );
 
-            return fallback("ML service unavailable, fallback to rule-based result only");
+            return buildFallbackResponse(
+                    "ML service unavailable; rule-based analysis applied"
+            );
         }
     }
 
-    private MlPredictionResponse fallback(String reason) {
+    private MlPredictionResponse buildFallbackResponse(String reason) {
         return MlPredictionResponse.builder()
                 .fraudProbability(0.0)
                 .prediction("UNAVAILABLE")
-                .riskLevel("UNKNOWN")
-                .reasons(java.util.List.of(reason))
-                .modelVersion("fallback")
+                .riskLevel("LOW")
+                .reasons(List.of(reason))
+                .modelVersion("fallback-rule-only")
                 .build();
     }
 }
