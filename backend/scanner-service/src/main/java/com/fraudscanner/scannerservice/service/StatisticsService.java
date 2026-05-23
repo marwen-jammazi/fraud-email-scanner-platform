@@ -30,7 +30,7 @@ public class StatisticsService {
     public StatisticsSummaryResponse getSummary(Long userId, String role) {
         List<ScanResult> scanResults = getAccessibleScanResults(userId, role);
 
-        long totalEmails = isAdmin(role)
+        long totalEmails = hasGlobalAnalyticsAccess(role)
                 ? emailMessageRepository.count()
                 : scanResults.size();
 
@@ -117,7 +117,7 @@ public class StatisticsService {
     }
 
     private List<ScanResult> getAccessibleScanResults(Long userId, String role) {
-        if (isAdmin(role)) {
+        if (hasGlobalAnalyticsAccess(role)) {
             return scanResultRepository.findAll();
         }
 
@@ -128,8 +128,9 @@ public class StatisticsService {
         return scanResultRepository.findByEmailMessageUserId(userId);
     }
 
-    private boolean isAdmin(String role) {
-        return role != null && role.equalsIgnoreCase("ADMIN");
+    private boolean hasGlobalAnalyticsAccess(String role) {
+        return role != null
+                && (role.equalsIgnoreCase("ADMIN") || role.equalsIgnoreCase("ANALYST"));
     }
 
     private double round(double value) {

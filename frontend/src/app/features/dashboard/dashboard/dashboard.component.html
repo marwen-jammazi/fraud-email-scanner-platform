@@ -3,10 +3,13 @@
     <div>
       <span class="eyebrow">Live Overview</span>
       <h1>Email Fraud Monitoring</h1>
-      <p>Track scanned emails, suspicious activity, risk levels, and flagged senders.</p>
+      <p>
+        Track scanned emails, suspicious activity, risk levels, and flagged
+        senders.
+      </p>
     </div>
 
-    <button class="refresh-btn" (click)="loadDashboard()">
+    <button class="refresh-btn" type="button" (click)="loadDashboard()">
       <i class="bi bi-arrow-clockwise"></i>
       Refresh
     </button>
@@ -29,7 +32,9 @@
 
       <div>
         <span>Total Emails</span>
-        <strong>{{ getMetric(summary?.totalEmails || summary?.totalScans) }}</strong>
+        <strong>{{
+          getMetric(summary?.totalEmails || summary?.totalScans)
+        }}</strong>
       </div>
     </article>
 
@@ -128,6 +133,7 @@
         <tbody>
           <tr *ngFor="let sender of topSenders; let i = index">
             <td>{{ i + 1 }}</td>
+
             <td>
               <div class="sender-cell">
                 <div class="sender-avatar">
@@ -137,9 +143,11 @@
                 <span>{{ getSenderName(sender) }}</span>
               </div>
             </td>
+
             <td>
-              <span class="count-pill">{{ sender.count }}</span>
+              <span class="count-pill">{{ getFlaggedCount(sender) }}</span>
             </td>
+
             <td>
               <span class="risk-pill">High attention</span>
             </td>

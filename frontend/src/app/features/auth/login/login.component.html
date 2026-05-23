@@ -1,27 +1,62 @@
-<section class="auth-screen">
-  <div class="auth-container">
+<section class="auth-screen cinematic-auth">
+  <div class="auth-background">
+    <div class="grid-glow"></div>
+    <div class="light-orb orb-one"></div>
+    <div class="light-orb orb-two"></div>
+    <div class="light-orb orb-three"></div>
+    <div class="security-scan-line"></div>
+
+    <div class="floating-particles">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+
+  <div class="auth-container cinematic-card">
     <aside class="auth-brand-panel">
-      <div class="brand-top">
-        <div class="brand-mark">
+      <div class="panel-glow"></div>
+
+      <div class="brand-top stagger-1">
+        <div class="brand-mark animated-shield">
           <i class="bi bi-shield-lock-fill"></i>
         </div>
         <span>Fraud Email Scanner</span>
       </div>
 
+      <div class="live-security-chip stagger-2">
+        <span class="live-dot"></span>
+        Protection engine active
+      </div>
+
       <div class="brand-content">
-        <span class="brand-label">Secure Console</span>
-        <h1>Welcome back to your email threat control center.</h1>
-        <p>
-          Sign in to monitor scans, detect risky emails, and review suspicious sender activity.
+        <span class="brand-label stagger-3">Secure Console</span>
+
+        <h1 class="stagger-4">
+          Welcome back to your email threat control center.
+        </h1>
+
+        <p class="stagger-5">
+          Sign in to monitor scans, detect risky emails, and review suspicious
+          sender activity.
         </p>
       </div>
 
-      <div class="brand-footer">
-        <div>
+      <div class="brand-footer stagger-6">
+        <div class="feature-tile">
+          <div class="tile-icon">
+            <i class="bi bi-cpu-fill"></i>
+          </div>
           <strong>Rule Engine</strong>
           <span>Fraud detection</span>
         </div>
-        <div>
+
+        <div class="feature-tile">
+          <div class="tile-icon">
+            <i class="bi bi-graph-up-arrow"></i>
+          </div>
           <strong>Analytics</strong>
           <span>Live dashboard</span>
         </div>
@@ -29,11 +64,12 @@
     </aside>
 
     <main class="auth-form-panel">
-      <div class="form-card">
-        <div class="form-header">
-          <span class="form-icon">
+      <div class="form-card premium-form" [class.form-loading]="loading">
+        <div class="form-header form-step-1">
+          <span class="form-icon animated-form-icon">
             <i class="bi bi-box-arrow-in-right"></i>
           </span>
+
           <h2>Login</h2>
           <p>Enter your credentials to continue.</p>
         </div>
@@ -44,37 +80,91 @@
         </div>
 
         <form (ngSubmit)="login()" class="auth-form">
-          <div class="field">
+          <div class="field form-step-2">
             <label>Email</label>
-            <input
-              type="email"
-              [(ngModel)]="form.email"
-              name="email"
-              placeholder="you@example.com"
-              required
-            />
+
+            <div class="input-shell">
+              <i class="bi bi-envelope"></i>
+              <input
+                type="email"
+                [(ngModel)]="form.email"
+                name="email"
+                placeholder="you@example.com"
+                required
+                [disabled]="loading"
+              />
+            </div>
           </div>
 
-          <div class="field">
+          <div class="field form-step-3">
             <label>Password</label>
-            <input
-              type="password"
-              [(ngModel)]="form.password"
-              name="password"
-              placeholder="Your password"
-              required
-            />
+
+            <div class="input-shell">
+              <i class="bi bi-lock"></i>
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                [(ngModel)]="form.password"
+                name="password"
+                placeholder="Your password"
+                required
+                [disabled]="loading"
+              />
+
+              <button
+                class="password-toggle"
+                type="button"
+                [disabled]="loading"
+                (click)="togglePassword()"
+                aria-label="Show or hide password"
+              >
+                <i
+                  class="bi"
+                  [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"
+                ></i>
+              </button>
+            </div>
           </div>
 
-          <button type="submit" class="submit-btn">
-            Login
-            <i class="bi bi-arrow-right-short"></i>
+          <button
+            type="submit"
+            class="submit-btn premium-submit form-step-4"
+            [disabled]="loading"
+          >
+            <span class="button-shine"></span>
+
+            <ng-container *ngIf="!loading; else authenticating">
+              <span>Login</span>
+              <i class="bi bi-arrow-right-short"></i>
+            </ng-container>
+
+            <ng-template #authenticating>
+              <span class="mini-loader"></span>
+              <span>Authenticating...</span>
+            </ng-template>
           </button>
         </form>
 
-        <div class="switch-link">
-          <span>Don’t have an account?</span>
+        <div class="switch-link form-step-5">
+          <span>Dont have an account?</span>
           <a routerLink="/register">Create account</a>
+        </div>
+      </div>
+
+      <div *ngIf="loading" class="secure-loading-overlay">
+        <div class="shield-loader">
+          <div class="loader-ring ring-one"></div>
+          <div class="loader-ring ring-two"></div>
+
+          <div class="loader-shield">
+            <i class="bi bi-shield-lock-fill"></i>
+          </div>
+        </div>
+
+        <h3>Authenticating securely</h3>
+        <p>Validating identity and opening your threat console...</p>
+
+        <div class="loading-progress">
+          <span></span>
         </div>
       </div>
     </main>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { AuditLog, AuditService } from '../../../core/services/audit.service';
 import { ScannerService } from '../../../core/services/scanner.service';
 
@@ -60,19 +61,39 @@ export class AuditLogsComponent implements OnInit {
   }
 
   loadAvailableEmailIds(): void {
-    this.scannerService.getAllEmails().subscribe({
-      next: (emails) => {
-        this.availableEmailIds = new Set(
-          (emails || [])
-            .map((email) => email.emailId || email.id || email.emailMessageId)
-            .filter((id) => id !== undefined && id !== null),
-        );
-      },
-      error: (error) => {
-        console.error('Failed to load available email IDs:', error);
-        this.availableEmailIds = new Set();
-      },
-    });
+    if (this.isAdmin()) {
+      this.scannerService.getAllEmails().subscribe({
+        next: (emails) => this.storeAvailableEmailIds(emails || []),
+        error: (error) => {
+          console.error('Failed to load available email IDs:', error);
+          this.availableEmailIds = new Set();
+        },
+      });
+
+      return;
+    }
+
+    if (this.isAnalyst()) {
+      forkJoin({
+        flagged: this.scannerService.getFlaggedEmails(),
+        suspicious: this.scannerService.getEmailsByStatus('SUSPICIOUS'),
+      }).subscribe({
+        next: (result) => {
+          this.storeAvailableEmailIds([
+            ...(result.flagged || []),
+            ...(result.suspicious || []),
+          ]);
+        },
+        error: (error) => {
+          console.error('Failed to load analyst investigation email IDs:', error);
+          this.availableEmailIds = new Set();
+        },
+      });
+
+      return;
+    }
+
+    this.availableEmailIds = new Set();
   }
 
   filterLogs(): void {
@@ -99,6 +120,14 @@ export class AuditLogsComponent implements OnInit {
     this.searchTerm = '';
     this.selectedEventType = 'ALL';
     this.filteredLogs = this.logs;
+  }
+
+  isAdmin(): boolean {
+    return localStorage.getItem('role') === 'ADMIN';
+  }
+
+  isAnalyst(): boolean {
+    return localStorage.getItem('role') === 'ANALYST';
   }
 
   getTotalEvents(): number {
@@ -185,6 +214,15 @@ export class AuditLogsComponent implements OnInit {
     }
 
     return 'neutral';
+  }
+
+  private storeAvailableEmailIds(emails: any[]): void {
+    this.availableEmailIds = new Set(
+      emails
+        .map((email) => email.emailId || email.id || email.emailMessageId)
+        .filter((id) => id !== undefined && id !== null)
+        .map((id) => Number(id)),
+    );
   }
 
   private sortLogsByDate(logs: AuditLog[]): AuditLog[] {

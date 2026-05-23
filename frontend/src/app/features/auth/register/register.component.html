@@ -1,27 +1,62 @@
-<section class="auth-screen">
-  <div class="auth-container">
+<section class="auth-screen cinematic-auth">
+  <div class="auth-background">
+    <div class="grid-glow"></div>
+    <div class="light-orb orb-one"></div>
+    <div class="light-orb orb-two"></div>
+    <div class="light-orb orb-three"></div>
+    <div class="security-scan-line"></div>
+
+    <div class="floating-particles">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+
+  <div class="auth-container cinematic-card">
     <aside class="auth-brand-panel register-panel">
-      <div class="brand-top">
-        <div class="brand-mark">
+      <div class="panel-glow"></div>
+
+      <div class="brand-top stagger-1">
+        <div class="brand-mark animated-shield">
           <i class="bi bi-fingerprint"></i>
         </div>
         <span>Fraud Email Scanner</span>
       </div>
 
+      <div class="live-security-chip stagger-2">
+        <span class="live-dot"></span>
+        Secure onboarding ready
+      </div>
+
       <div class="brand-content">
-        <span class="brand-label">Create Workspace</span>
-        <h1>Start building your email fraud monitoring environment.</h1>
-        <p>
-          Create an account to scan suspicious emails, review risk scores, and investigate flagged senders.
+        <span class="brand-label stagger-3">Create Workspace</span>
+
+        <h1 class="stagger-4">
+          Start building your email fraud monitoring environment.
+        </h1>
+
+        <p class="stagger-5">
+          Create an account to scan suspicious emails, review risk scores, and
+          investigate flagged senders.
         </p>
       </div>
 
-      <div class="brand-footer">
-        <div>
+      <div class="brand-footer stagger-6">
+        <div class="feature-tile">
+          <div class="tile-icon">
+            <i class="bi bi-key-fill"></i>
+          </div>
           <strong>JWT</strong>
           <span>Secure access</span>
         </div>
-        <div>
+
+        <div class="feature-tile">
+          <div class="tile-icon">
+            <i class="bi bi-journal-check"></i>
+          </div>
           <strong>Audit</strong>
           <span>Activity tracking</span>
         </div>
@@ -29,11 +64,12 @@
     </aside>
 
     <main class="auth-form-panel">
-      <div class="form-card">
-        <div class="form-header">
-          <span class="form-icon">
+      <div class="form-card premium-form" [class.form-loading]="loading">
+        <div class="form-header form-step-1">
+          <span class="form-icon animated-form-icon">
             <i class="bi bi-person-plus-fill"></i>
           </span>
+
           <h2>Create Account</h2>
           <p>Register to access the scanner dashboard.</p>
         </div>
@@ -48,52 +84,116 @@
           <span>{{ successMessage }}</span>
         </div>
 
-        <form #registerForm="ngForm" (ngSubmit)="register(registerForm)" class="auth-form">
-          <div class="field">
+        <form
+          #registerForm="ngForm"
+          (ngSubmit)="register(registerForm)"
+          class="auth-form"
+        >
+          <div class="field form-step-2">
             <label>Full Name</label>
-            <input
-              type="text"
-              [(ngModel)]="form.fullName"
-              name="fullName"
-              placeholder="Mehdi Chebaane"
-              required
-            />
+
+            <div class="input-shell">
+              <i class="bi bi-person"></i>
+              <input
+                type="text"
+                [(ngModel)]="form.fullName"
+                name="fullName"
+                placeholder="Mehdi Chebaane"
+                required
+                [disabled]="loading"
+              />
+            </div>
           </div>
 
-          <div class="field">
+          <div class="field form-step-3">
             <label>Email</label>
-            <input
-              type="email"
-              [(ngModel)]="form.email"
-              name="email"
-              placeholder="you@example.com"
-              required
-              email
-            />
+
+            <div class="input-shell">
+              <i class="bi bi-envelope"></i>
+              <input
+                type="email"
+                [(ngModel)]="form.email"
+                name="email"
+                placeholder="you@example.com"
+                required
+                email
+                [disabled]="loading"
+              />
+            </div>
           </div>
 
-          <div class="field">
+          <div class="field form-step-4">
             <label>Password</label>
-            <input
-              type="password"
-              [(ngModel)]="form.password"
-              name="password"
-              placeholder="Minimum 6 characters"
-              required
-              minlength="6"
-            />
+
+            <div class="input-shell">
+              <i class="bi bi-lock"></i>
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                [(ngModel)]="form.password"
+                name="password"
+                placeholder="Minimum 6 characters"
+                required
+                minlength="6"
+                [disabled]="loading"
+              />
+
+              <button
+                class="password-toggle"
+                type="button"
+                [disabled]="loading"
+                (click)="togglePassword()"
+                aria-label="Show or hide password"
+              >
+                <i
+                  class="bi"
+                  [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"
+                ></i>
+              </button>
+            </div>
+
             <small>Use at least 6 characters.</small>
           </div>
 
-          <button type="submit" class="submit-btn" [disabled]="registerForm.invalid">
-            Register
-            <i class="bi bi-arrow-right-short"></i>
+          <button
+            type="submit"
+            class="submit-btn premium-submit form-step-5"
+            [disabled]="registerForm.invalid || loading"
+          >
+            <span class="button-shine"></span>
+
+            <ng-container *ngIf="!loading; else creatingAccount">
+              <span>Register</span>
+              <i class="bi bi-arrow-right-short"></i>
+            </ng-container>
+
+            <ng-template #creatingAccount>
+              <span class="mini-loader"></span>
+              <span>Creating account...</span>
+            </ng-template>
           </button>
         </form>
 
-        <div class="switch-link">
+        <div class="switch-link form-step-6">
           <span>Already have an account?</span>
           <a routerLink="/login">Login</a>
+        </div>
+      </div>
+
+      <div *ngIf="loading" class="secure-loading-overlay">
+        <div class="shield-loader">
+          <div class="loader-ring ring-one"></div>
+          <div class="loader-ring ring-two"></div>
+
+          <div class="loader-shield success-loader">
+            <i class="bi bi-fingerprint"></i>
+          </div>
+        </div>
+
+        <h3>Creating secure workspace</h3>
+        <p>Preparing your email protection environment...</p>
+
+        <div class="loading-progress">
+          <span></span>
         </div>
       </div>
     </main>

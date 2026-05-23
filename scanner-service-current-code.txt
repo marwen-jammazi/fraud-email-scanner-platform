@@ -1,0 +1,1852 @@
+SCANNER SERVICE CURRENT SOURCE CODE
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\client\AuditServiceClient.java
+============================================================
+package com.fraudscanner.scannerservice.client;
+
+import com.fraudscanner.scannerservice.dto.AuditLogRequest;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
+@Service
+public class AuditServiceClient {
+
+    private final RestClient restClient;
+
+    public AuditServiceClient(
+            @Value("${services.audit-service.url:http://localhost:8083}") String auditServiceUrl
+    ) {
+        this.restClient = RestClient.builder()
+                .baseUrl(auditServiceUrl)
+                .build();
+    }
+
+    public void createAuditLog(AuditLogRequest request) {
+        restClient.post()
+                .uri("/api/audit")
+                .body(request)
+                .retrieve()
+                .toBodilessEntity();
+    }
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\client\MlServiceClient.java
+============================================================
+package com.fraudscanner.scannerservice.client;
+
+import com.fraudscanner.scannerservice.dto.MlPredictionRequest;
+import com.fraudscanner.scannerservice.dto.MlPredictionResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
+import java.util.List;
+
+@Slf4j
+@Service
+public class MlServiceClient {
+
+    private final RestClient restClient;
+
+    public MlServiceClient(
+            @Value("${services.ml-service.url:http://localhost:8000}") String mlServiceUrl
+    ) {
+        this.restClient = RestClient.builder()
+                .baseUrl(mlServiceUrl)
+                .build();
+    }
+
+    public MlPredictionResponse predict(MlPredictionRequest request) {
+        try {
+            MlPredictionResponse response = restClient.post()
+                    .uri("/predict")
+                    .body(request)
+                    .retrieve()
+                    .body(MlPredictionResponse.class);
+
+            if (response == null) {
+                return buildFallbackResponse("ML service returned an empty response");
+            }
+
+            return response;
+
+        } catch (Exception exception) {
+            log.warn("ML service unavailable. Continuing with rule-based detection only: {}",
+                    exception.getMessage());
+
+            return buildFallbackResponse("ML service unavailable; rule-based analysis applied");
+        }
+    }
+
+    private MlPredictionResponse buildFallbackResponse(String reason) {
+        return MlPredictionResponse.builder()
+                .fraudProbability(0.0)
+                .prediction("UNAVAILABLE")
+                .riskLevel("LOW")
+                .reasons(List.of(reason))
+                .modelVersion("fallback-rule-only")
+                .build();
+    }
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\config\RestTemplateConfig.java
+============================================================
+package com.fraudscanner.scannerservice.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
+
+@Configuration
+public class RestTemplateConfig {
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\controller\EmailController.java
+============================================================
+package com.fraudscanner.scannerservice.controller;
+
+import com.fraudscanner.scannerservice.dto.EmailDetailsResponse;
+import com.fraudscanner.scannerservice.dto.EmailScanRequest;
+import com.fraudscanner.scannerservice.dto.EmailSummaryResponse;
+import com.fraudscanner.scannerservice.dto.ScanResponse;
+import com.fraudscanner.scannerservice.dto.UpdateEmailRequest;
+import com.fraudscanner.scannerservice.enums.EmailStatus;
+import com.fraudscanner.scannerservice.service.EmailQueryService;
+import com.fraudscanner.scannerservice.service.EmailScanService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/emails")
+@CrossOrigin(origins = "*")
+public class EmailController {
+
+    private final EmailScanService emailScanService;
+    private final EmailQueryService emailQueryService;
+
+    public EmailController(
+            EmailScanService emailScanService,
+            EmailQueryService emailQueryService
+    ) {
+        this.emailScanService = emailScanService;
+        this.emailQueryService = emailQueryService;
+    }
+
+    @PostMapping("/scan")
+    public ResponseEntity<ScanResponse> scanEmail(@Valid @RequestBody EmailScanRequest request) {
+        return ResponseEntity.ok(emailScanService.scanEmail(request));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<EmailSummaryResponse>> getAllEmails(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false, defaultValue = "USER") String role
+    ) {
+        return ResponseEntity.ok(emailQueryService.getAllEmails(userId, role));
+    }
+
+    @GetMapping("/flagged")
+    public ResponseEntity<List<EmailSummaryResponse>> getFlaggedEmails(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false, defaultValue = "USER") String role
+    ) {
+        return ResponseEntity.ok(emailQueryService.getFlaggedEmails(userId, role));
+    }
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<EmailSummaryResponse>> getEmailsByStatus(
+            @PathVariable EmailStatus status,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false, defaultValue = "USER") String role
+    ) {
+        return ResponseEntity.ok(emailQueryService.getEmailsByStatus(status, userId, role));
+    }
+
+    @GetMapping("/{emailId}")
+    public ResponseEntity<EmailDetailsResponse> getEmailDetails(
+            @PathVariable Long emailId,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false, defaultValue = "USER") String role
+    ) {
+        return ResponseEntity.ok(emailQueryService.getEmailDetails(emailId, userId, role));
+    }
+
+    @PutMapping("/{emailId}")
+    public ResponseEntity<EmailDetailsResponse> updateEmail(
+            @PathVariable Long emailId,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false, defaultValue = "USER") String role,
+            @RequestBody UpdateEmailRequest request
+    ) {
+        return ResponseEntity.ok(emailQueryService.updateEmail(emailId, userId, role, request));
+    }
+
+    @DeleteMapping("/{emailId}")
+    public ResponseEntity<Void> deleteEmail(
+            @PathVariable Long emailId,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false, defaultValue = "USER") String role
+    ) {
+        emailQueryService.deleteEmail(emailId, userId, role);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<String> health() {
+        return ResponseEntity.ok("Scanner Service is running");
+    }
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\controller\FeedbackController.java
+============================================================
+package com.fraudscanner.scannerservice.controller;
+
+
+import com.fraudscanner.scannerservice.dto.FeedbackRequest;
+import com.fraudscanner.scannerservice.service.FeedbackService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/feedback")
+@CrossOrigin(origins = "*")
+public class FeedbackController {
+
+    private final FeedbackService feedbackService;
+
+    public FeedbackController(FeedbackService feedbackService) {
+        this.feedbackService = feedbackService;
+    }
+
+    @PostMapping
+    public ResponseEntity<String> submitFeedback(@Valid @RequestBody FeedbackRequest request) {
+        return ResponseEntity.ok(feedbackService.submitFeedback(request));
+    }
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\controller\StatisticsController.java
+============================================================
+package com.fraudscanner.scannerservice.controller;
+
+import com.fraudscanner.scannerservice.dto.DistributionResponse;
+import com.fraudscanner.scannerservice.dto.StatisticsSummaryResponse;
+import com.fraudscanner.scannerservice.dto.TopSenderResponse;
+import com.fraudscanner.scannerservice.service.StatisticsService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/statistics")
+@CrossOrigin(origins = "*")
+public class StatisticsController {
+
+    private final StatisticsService statisticsService;
+
+    public StatisticsController(StatisticsService statisticsService) {
+        this.statisticsService = statisticsService;
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<StatisticsSummaryResponse> getSummary(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false, defaultValue = "USER") String role
+    ) {
+        return ResponseEntity.ok(statisticsService.getSummary(userId, role));
+    }
+
+    @GetMapping("/status-distribution")
+    public ResponseEntity<List<DistributionResponse>> getStatusDistribution(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false, defaultValue = "USER") String role
+    ) {
+        return ResponseEntity.ok(statisticsService.getStatusDistribution(userId, role));
+    }
+
+    @GetMapping("/risk-distribution")
+    public ResponseEntity<List<DistributionResponse>> getRiskDistribution(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false, defaultValue = "USER") String role
+    ) {
+        return ResponseEntity.ok(statisticsService.getRiskDistribution(userId, role));
+    }
+
+    @GetMapping("/top-flagged-senders")
+    public ResponseEntity<List<TopSenderResponse>> getTopFlaggedSenders(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false, defaultValue = "USER") String role
+    ) {
+        return ResponseEntity.ok(statisticsService.getTopFlaggedSenders(userId, role));
+    }
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\dto\AuditLogRequest.java
+============================================================
+package com.fraudscanner.scannerservice.dto;
+
+import com.fraudscanner.scannerservice.enums.AuditEventType;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AuditLogRequest {
+
+    private Long emailId;
+    private Long userId;
+    private AuditEventType eventType;
+    private String performedBy;
+    private String details;
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\dto\DistributionResponse.java
+============================================================
+package com.fraudscanner.scannerservice.dto;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class DistributionResponse {
+
+    private String label;
+    private long count;
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\dto\EmailDetailsResponse.java
+============================================================
+package com.fraudscanner.scannerservice.dto;
+
+import com.fraudscanner.scannerservice.enums.EmailStatus;
+import com.fraudscanner.scannerservice.enums.RiskLevel;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class EmailDetailsResponse {
+
+    private Long emailId;
+    private Long scanId;
+    private String sender;
+    private String receiverEmail;
+    private String subject;
+    private String body;
+    private EmailStatus status;
+    private RiskLevel riskLevel;
+    private Integer riskScore;
+    private List<String> reasons;
+    private LocalDateTime receivedAt;
+    private LocalDateTime scannedAt;
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\dto\EmailScanRequest.java
+============================================================
+package com.fraudscanner.scannerservice.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class EmailScanRequest {
+
+    private Long userId;
+
+    /*
+     * Full name of the logged-in user who launched the scan.
+     * Used in audit logs as Scanner Name.
+     */
+    private String performedBy;
+
+    @NotBlank(message = "Sender is required")
+    private String sender;
+
+    @NotBlank(message = "Receiver email is required")
+    private String receiverEmail;
+
+    @NotBlank(message = "Subject is required")
+    private String subject;
+
+    @NotBlank(message = "Body is required")
+    private String body;
+
+    private LocalDateTime receivedAt;
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\dto\EmailSummaryResponse.java
+============================================================
+package com.fraudscanner.scannerservice.dto;
+
+import com.fraudscanner.scannerservice.enums.EmailStatus;
+import com.fraudscanner.scannerservice.enums.RiskLevel;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class EmailSummaryResponse {
+
+    private Long emailId;
+
+    private Long userId;
+
+    private String sender;
+
+    private String receiverEmail;
+
+    private String subject;
+
+    private EmailStatus status;
+
+    private RiskLevel riskLevel;
+
+    private Integer riskScore;
+
+    private LocalDateTime receivedAt;
+
+    private LocalDateTime scannedAt;
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\dto\FeedbackRequest.java
+============================================================
+package com.fraudscanner.scannerservice.dto;
+
+import com.fraudscanner.scannerservice.enums.FeedbackLabel;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class FeedbackRequest {
+
+    @NotNull(message = "Email ID is required")
+    private Long emailId;
+
+    private Long userId;
+
+    private String performedBy;
+
+    @NotNull(message = "Feedback label is required")
+    private FeedbackLabel label;
+
+    private String comment;
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\dto\MlPredictionRequest.java
+============================================================
+package com.fraudscanner.scannerservice.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MlPredictionRequest {
+
+    @NotBlank(message = "Sender is required")
+    private String sender;
+
+    @NotBlank(message = "Subject is required")
+    private String subject;
+
+    @NotBlank(message = "Body is required")
+    private String body;
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\dto\MlPredictionResponse.java
+============================================================
+package com.fraudscanner.scannerservice.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class MlPredictionResponse {
+
+    private Double fraudProbability;
+
+    private String prediction;
+
+    private String riskLevel;
+
+    private List<String> reasons;
+
+    private String modelVersion;
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\dto\ScanResponse.java
+============================================================
+package com.fraudscanner.scannerservice.dto;
+
+
+import com.fraudscanner.scannerservice.enums.EmailStatus;
+import com.fraudscanner.scannerservice.enums.RiskLevel;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ScanResponse {
+
+    private Long emailId;
+    private Long scanId;
+    private EmailStatus status;
+    private RiskLevel riskLevel;
+    private Integer riskScore;
+    private List<String> reasons;
+    private LocalDateTime scannedAt;
+
+    private Double mlFraudProbability;
+
+    private String mlPrediction;
+
+    private String mlRiskLevel;
+
+    private String mlModelVersion;
+
+    private List<String> mlReasons;
+
+    private Integer ruleRiskScore;
+
+    private Integer finalRiskScore;
+
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\dto\StatisticsSummaryResponse.java
+============================================================
+package com.fraudscanner.scannerservice.dto;
+
+public class StatisticsSummaryResponse {
+
+    private Long totalEmails;
+    private Long safeEmails;
+    private Long suspiciousEmails;
+    private Long flaggedEmails;
+    private Double flaggedRate;
+    private Double averageRiskScore;
+
+    public StatisticsSummaryResponse() {
+    }
+
+    public StatisticsSummaryResponse(
+            Long totalEmails,
+            Long safeEmails,
+            Long suspiciousEmails,
+            Long flaggedEmails,
+            Double flaggedRate,
+            Double averageRiskScore
+    ) {
+        this.totalEmails = totalEmails;
+        this.safeEmails = safeEmails;
+        this.suspiciousEmails = suspiciousEmails;
+        this.flaggedEmails = flaggedEmails;
+        this.flaggedRate = flaggedRate;
+        this.averageRiskScore = averageRiskScore;
+    }
+
+    public Long getTotalEmails() {
+        return totalEmails;
+    }
+
+    public void setTotalEmails(Long totalEmails) {
+        this.totalEmails = totalEmails;
+    }
+
+    public Long getSafeEmails() {
+        return safeEmails;
+    }
+
+    public void setSafeEmails(Long safeEmails) {
+        this.safeEmails = safeEmails;
+    }
+
+    public Long getSuspiciousEmails() {
+        return suspiciousEmails;
+    }
+
+    public void setSuspiciousEmails(Long suspiciousEmails) {
+        this.suspiciousEmails = suspiciousEmails;
+    }
+
+    public Long getFlaggedEmails() {
+        return flaggedEmails;
+    }
+
+    public void setFlaggedEmails(Long flaggedEmails) {
+        this.flaggedEmails = flaggedEmails;
+    }
+
+    public Double getFlaggedRate() {
+        return flaggedRate;
+    }
+
+    public void setFlaggedRate(Double flaggedRate) {
+        this.flaggedRate = flaggedRate;
+    }
+
+    public Double getAverageRiskScore() {
+        return averageRiskScore;
+    }
+
+    public void setAverageRiskScore(Double averageRiskScore) {
+        this.averageRiskScore = averageRiskScore;
+    }
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\dto\TopSenderResponse.java
+============================================================
+package com.fraudscanner.scannerservice.dto;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class TopSenderResponse {
+
+    private String sender;
+    private long flaggedCount;
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\dto\UpdateEmailRequest.java
+============================================================
+package com.fraudscanner.scannerservice.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class UpdateEmailRequest {
+
+    @NotBlank(message = "Sender is required")
+    private String sender;
+
+    @NotBlank(message = "Receiver email is required")
+    private String receiverEmail;
+
+    @NotBlank(message = "Subject is required")
+    private String subject;
+
+    @NotBlank(message = "Body is required")
+    private String body;
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\entity\EmailMessage.java
+============================================================
+package com.fraudscanner.scannerservice.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Table(name = "email_messages")
+public class EmailMessage {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /*
+     * Owner of the scanned email.
+     * Used to ensure each normal user sees only their own scans.
+     */
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column(nullable = false)
+    private String sender;
+
+    @Column(name = "receiver_email", nullable = false)
+    private String receiverEmail;
+
+    @Column(nullable = false)
+    private String subject;
+
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String body;
+
+    @Builder.Default
+    @Column(name = "received_at", nullable = false)
+    private LocalDateTime receivedAt = LocalDateTime.now();
+
+    @Builder.Default
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @PrePersist
+    public void onCreate() {
+        if (receivedAt == null) {
+            receivedAt = LocalDateTime.now();
+        }
+
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\entity\ScanResult.java
+============================================================
+package com.fraudscanner.scannerservice.entity;
+
+
+import com.fraudscanner.scannerservice.enums.EmailStatus;
+import com.fraudscanner.scannerservice.enums.RiskLevel;
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "scan_results")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ScanResult {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Integer riskScore;
+
+    @Enumerated(EnumType.STRING)
+    private RiskLevel riskLevel;
+
+    @Enumerated(EnumType.STRING)
+    private EmailStatus status;
+
+    @Column(columnDefinition = "TEXT")
+    private String reasons;
+
+    @Builder.Default
+    private LocalDateTime scannedAt = LocalDateTime.now();
+
+    @OneToOne
+    @JoinColumn(name = "email_id", nullable = false)
+    private EmailMessage emailMessage;
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\entity\UserFeedback.java
+============================================================
+package com.fraudscanner.scannerservice.entity;
+
+
+import com.fraudscanner.scannerservice.entity.EmailMessage;
+import com.fraudscanner.scannerservice.enums.FeedbackLabel;
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "user_feedback")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class UserFeedback {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long userId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private FeedbackLabel label;
+
+    @Column(columnDefinition = "TEXT")
+    private String comment;
+
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @ManyToOne
+    @JoinColumn(name = "email_id", nullable = false)
+    private EmailMessage emailMessage;
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\enums\AuditEventType.java
+============================================================
+package com.fraudscanner.scannerservice.enums;
+
+public enum AuditEventType {
+    EMAIL_SCANNED,
+    EMAIL_FLAGGED,
+    FEEDBACK_SUBMITTED,
+    EMAIL_MARKED_FALSE_POSITIVE,
+    EMAIL_CONFIRMED_FRAUD
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\enums\EmailStatus.java
+============================================================
+package com.fraudscanner.scannerservice.enums;
+
+public enum EmailStatus {
+    SAFE,
+    SUSPICIOUS,
+    FLAGGED
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\enums\FeedbackLabel.java
+============================================================
+package com.fraudscanner.scannerservice.enums;
+
+public enum FeedbackLabel {
+    FALSE_POSITIVE,
+    CONFIRMED_FRAUD
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\enums\RiskLevel.java
+============================================================
+package com.fraudscanner.scannerservice.enums;
+
+public enum RiskLevel {
+    LOW,
+    MEDIUM,
+    HIGH
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\repository\EmailMessageRepository.java
+============================================================
+package com.fraudscanner.scannerservice.repository;
+
+import com.fraudscanner.scannerservice.entity.EmailMessage;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface EmailMessageRepository extends JpaRepository<EmailMessage, Long> {
+
+    List<EmailMessage> findBySenderContainingIgnoreCase(String sender);
+
+    List<EmailMessage> findBySubjectContainingIgnoreCase(String subject);
+    List<EmailMessage> findByUserId(Long userId);
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\repository\ScanResultRepository.java
+============================================================
+package com.fraudscanner.scannerservice.repository;
+
+import com.fraudscanner.scannerservice.entity.ScanResult;
+import com.fraudscanner.scannerservice.enums.EmailStatus;
+import com.fraudscanner.scannerservice.enums.RiskLevel;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface ScanResultRepository extends JpaRepository<ScanResult, Long> {
+
+    List<ScanResult> findByEmailMessageUserId(Long userId);
+
+    Optional<ScanResult> findByEmailMessageId(Long emailId);
+
+    Optional<ScanResult> findByEmailMessageIdAndEmailMessageUserId(Long emailId, Long userId);
+
+    List<ScanResult> findByStatus(EmailStatus status);
+
+    List<ScanResult> findByStatusAndEmailMessageUserId(EmailStatus status, Long userId);
+
+    List<ScanResult> findByRiskLevel(RiskLevel riskLevel);
+
+    long countByStatus(EmailStatus status);
+
+    long countByRiskLevel(RiskLevel riskLevel);
+
+    @Query("SELECT AVG(s.riskScore) FROM ScanResult s")
+    Double averageRiskScore();
+
+    @Query("""
+           SELECT s.status, COUNT(s)
+           FROM ScanResult s
+           GROUP BY s.status
+           """)
+    List<Object[]> countByStatusGroup();
+
+    @Query("""
+           SELECT s.riskLevel, COUNT(s)
+           FROM ScanResult s
+           GROUP BY s.riskLevel
+           """)
+    List<Object[]> countByRiskLevelGroup();
+
+    @Query("""
+           SELECT s
+           FROM ScanResult s
+           ORDER BY s.scannedAt DESC
+           """)
+    List<ScanResult> findAllOrderByScannedAtDesc();
+
+    @Query("""
+           SELECT s.emailMessage.sender, COUNT(s)
+           FROM ScanResult s
+           WHERE s.status = com.fraudscanner.scannerservice.enums.EmailStatus.FLAGGED
+           GROUP BY s.emailMessage.sender
+           ORDER BY COUNT(s) DESC
+           """)
+    List<Object[]> findTopFlaggedSenders();
+
+    @Transactional
+    void deleteByEmailMessageId(Long emailId);
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\repository\UserFeedbackRepository.java
+============================================================
+package com.fraudscanner.scannerservice.repository;
+
+import com.fraudscanner.scannerservice.entity.UserFeedback;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface UserFeedbackRepository extends JpaRepository<UserFeedback, Long> {
+
+    List<UserFeedback> findByEmailMessageId(Long emailId);
+
+    List<UserFeedback> findByUserId(Long userId);
+
+    void deleteByEmailMessageId(Long emailId);
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\ScannerServiceApplication.java
+============================================================
+package com.fraudscanner.scannerservice;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class ScannerServiceApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(ScannerServiceApplication.class, args);
+	}
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\service\EmailQueryService.java
+============================================================
+package com.fraudscanner.scannerservice.service;
+
+import com.fraudscanner.scannerservice.dto.EmailDetailsResponse;
+import com.fraudscanner.scannerservice.dto.EmailSummaryResponse;
+import com.fraudscanner.scannerservice.dto.UpdateEmailRequest;
+import com.fraudscanner.scannerservice.entity.EmailMessage;
+import com.fraudscanner.scannerservice.entity.ScanResult;
+import com.fraudscanner.scannerservice.enums.EmailStatus;
+import com.fraudscanner.scannerservice.repository.EmailMessageRepository;
+import com.fraudscanner.scannerservice.repository.ScanResultRepository;
+import com.fraudscanner.scannerservice.repository.UserFeedbackRepository;
+import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Arrays;
+import java.util.List;
+
+@Service
+public class EmailQueryService {
+
+    private final ScanResultRepository scanResultRepository;
+    private final EmailMessageRepository emailMessageRepository;
+    private final UserFeedbackRepository userFeedbackRepository;
+
+    public EmailQueryService(
+            ScanResultRepository scanResultRepository,
+            EmailMessageRepository emailMessageRepository,
+            UserFeedbackRepository userFeedbackRepository
+    ) {
+        this.scanResultRepository = scanResultRepository;
+        this.emailMessageRepository = emailMessageRepository;
+        this.userFeedbackRepository = userFeedbackRepository;
+    }
+
+    public List<EmailSummaryResponse> getAllEmails(Long userId, String role) {
+        if (isAdmin(role)) {
+            return scanResultRepository.findAllOrderByScannedAtDesc()
+                    .stream()
+                    .map(this::mapToSummary)
+                    .toList();
+        }
+
+        return scanResultRepository.findAllOrderByScannedAtDesc()
+                .stream()
+                .filter(scanResult -> belongsToUser(scanResult, userId))
+                .map(this::mapToSummary)
+                .toList();
+    }
+
+    public List<EmailSummaryResponse> getFlaggedEmails(Long userId, String role) {
+        if (isAdmin(role)) {
+            return scanResultRepository.findByStatus(EmailStatus.FLAGGED)
+                    .stream()
+                    .map(this::mapToSummary)
+                    .toList();
+        }
+
+        return scanResultRepository.findByStatusAndEmailMessageUserId(EmailStatus.FLAGGED, userId)
+                .stream()
+                .map(this::mapToSummary)
+                .toList();
+    }
+
+    public List<EmailSummaryResponse> getEmailsByStatus(EmailStatus status, Long userId, String role) {
+        if (isAdmin(role)) {
+            return scanResultRepository.findByStatus(status)
+                    .stream()
+                    .map(this::mapToSummary)
+                    .toList();
+        }
+
+        return scanResultRepository.findByStatusAndEmailMessageUserId(status, userId)
+                .stream()
+                .map(this::mapToSummary)
+                .toList();
+    }
+
+    public EmailDetailsResponse getEmailDetails(Long emailId, Long userId, String role) {
+        ScanResult scanResult;
+
+        if (isAdmin(role)) {
+            scanResult = scanResultRepository.findByEmailMessageId(emailId)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Email scan result not found"
+                    ));
+        } else {
+            scanResult = scanResultRepository.findByEmailMessageIdAndEmailMessageUserId(emailId, userId)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Email scan result not found or access denied"
+                    ));
+        }
+
+        return mapToDetails(scanResult);
+    }
+
+    public EmailDetailsResponse updateEmail(
+            Long emailId,
+            Long userId,
+            String role,
+            UpdateEmailRequest request
+    ) {
+        if (!isAdmin(role)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only admins can update emails"
+            );
+        }
+
+        ScanResult scanResult = scanResultRepository.findByEmailMessageId(emailId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Email scan result not found"
+                ));
+
+        EmailMessage email = scanResult.getEmailMessage();
+
+        if (email == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Email message not found"
+            );
+        }
+
+        if (request.getSender() != null && !request.getSender().isBlank()) {
+            email.setSender(request.getSender().trim());
+        }
+
+        if (request.getReceiverEmail() != null && !request.getReceiverEmail().isBlank()) {
+            email.setReceiverEmail(request.getReceiverEmail().trim());
+        }
+
+        if (request.getSubject() != null && !request.getSubject().isBlank()) {
+            email.setSubject(request.getSubject().trim());
+        }
+
+        if (request.getBody() != null && !request.getBody().isBlank()) {
+            email.setBody(request.getBody());
+        }
+
+        emailMessageRepository.save(email);
+
+        return mapToDetails(scanResult);
+    }
+
+    @Transactional
+    public void deleteEmail(Long emailId, Long userId, String role) {
+        if (!isAdmin(role)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only admins can delete emails"
+            );
+        }
+
+        if (!emailMessageRepository.existsById(emailId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Email not found with id: " + emailId
+            );
+        }
+
+        userFeedbackRepository.deleteByEmailMessageId(emailId);
+        scanResultRepository.deleteByEmailMessageId(emailId);
+        emailMessageRepository.deleteById(emailId);
+    }
+
+    private EmailDetailsResponse mapToDetails(ScanResult scanResult) {
+        EmailMessage email = scanResult.getEmailMessage();
+
+        if (email == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Email message not found"
+            );
+        }
+
+        return EmailDetailsResponse.builder()
+                .emailId(email.getId())
+                .scanId(scanResult.getId())
+                .sender(email.getSender())
+                .receiverEmail(email.getReceiverEmail())
+                .subject(email.getSubject())
+                .body(email.getBody())
+                .status(scanResult.getStatus())
+                .riskLevel(scanResult.getRiskLevel())
+                .riskScore(scanResult.getRiskScore())
+                .reasons(splitReasons(scanResult.getReasons()))
+                .receivedAt(email.getReceivedAt())
+                .scannedAt(scanResult.getScannedAt())
+                .build();
+    }
+
+    private boolean isAdmin(String role) {
+        return role != null && role.equalsIgnoreCase("ADMIN");
+    }
+
+    private boolean belongsToUser(ScanResult scanResult, Long userId) {
+        if (scanResult == null || scanResult.getEmailMessage() == null || userId == null) {
+            return false;
+        }
+
+        return userId.equals(scanResult.getEmailMessage().getUserId());
+    }
+
+    private EmailSummaryResponse mapToSummary(ScanResult scanResult) {
+        EmailMessage email = scanResult.getEmailMessage();
+
+        if (email == null) {
+            return EmailSummaryResponse.builder()
+                    .emailId(null)
+                    .userId(null)
+                    .sender("Deleted email")
+                    .receiverEmail("N/A")
+                    .subject("Deleted email")
+                    .status(scanResult.getStatus())
+                    .riskLevel(scanResult.getRiskLevel())
+                    .riskScore(scanResult.getRiskScore())
+                    .receivedAt(null)
+                    .scannedAt(scanResult.getScannedAt())
+                    .build();
+        }
+
+        return EmailSummaryResponse.builder()
+                .emailId(email.getId())
+                .userId(email.getUserId())
+                .sender(email.getSender())
+                .receiverEmail(email.getReceiverEmail())
+                .subject(email.getSubject())
+                .status(scanResult.getStatus())
+                .riskLevel(scanResult.getRiskLevel())
+                .riskScore(scanResult.getRiskScore())
+                .receivedAt(email.getReceivedAt())
+                .scannedAt(scanResult.getScannedAt())
+                .build();
+    }
+
+    private List<String> splitReasons(String reasons) {
+        if (reasons == null || reasons.isBlank()) {
+            return List.of();
+        }
+
+        return Arrays.stream(reasons.split("\\|"))
+                .map(String::trim)
+                .filter(reason -> !reason.isBlank())
+                .toList();
+    }
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\service\EmailScanService.java
+============================================================
+package com.fraudscanner.scannerservice.service;
+
+import com.fraudscanner.scannerservice.client.AuditServiceClient;
+import com.fraudscanner.scannerservice.client.MlServiceClient;
+import com.fraudscanner.scannerservice.dto.AuditLogRequest;
+import com.fraudscanner.scannerservice.dto.EmailScanRequest;
+import com.fraudscanner.scannerservice.dto.MlPredictionRequest;
+import com.fraudscanner.scannerservice.dto.MlPredictionResponse;
+import com.fraudscanner.scannerservice.dto.ScanResponse;
+import com.fraudscanner.scannerservice.entity.EmailMessage;
+import com.fraudscanner.scannerservice.entity.ScanResult;
+import com.fraudscanner.scannerservice.enums.AuditEventType;
+import com.fraudscanner.scannerservice.enums.EmailStatus;
+import com.fraudscanner.scannerservice.enums.RiskLevel;
+import com.fraudscanner.scannerservice.repository.EmailMessageRepository;
+import com.fraudscanner.scannerservice.repository.ScanResultRepository;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+public class EmailScanService {
+
+    private final EmailMessageRepository emailMessageRepository;
+    private final ScanResultRepository scanResultRepository;
+    private final RuleDetectionService ruleDetectionService;
+    private final AuditServiceClient auditServiceClient;
+    private final MlServiceClient mlServiceClient;
+
+    public EmailScanService(
+            EmailMessageRepository emailMessageRepository,
+            ScanResultRepository scanResultRepository,
+            RuleDetectionService ruleDetectionService,
+            AuditServiceClient auditServiceClient,
+            MlServiceClient mlServiceClient
+    ) {
+        this.emailMessageRepository = emailMessageRepository;
+        this.scanResultRepository = scanResultRepository;
+        this.ruleDetectionService = ruleDetectionService;
+        this.auditServiceClient = auditServiceClient;
+        this.mlServiceClient = mlServiceClient;
+    }
+
+    public ScanResponse scanEmail(EmailScanRequest request) {
+
+        EmailMessage savedEmail = emailMessageRepository.save(
+                EmailMessage.builder()
+                        .sender(request.getSender())
+                        .receiverEmail(request.getReceiverEmail())
+                        .subject(request.getSubject())
+                        .body(request.getBody())
+                        .userId(request.getUserId())
+                        .receivedAt(request.getReceivedAt() != null
+                                ? request.getReceivedAt()
+                                : LocalDateTime.now())
+                        .build()
+        );
+
+        RuleDetectionService.DetectionResult detectionResult = ruleDetectionService.analyze(
+                request.getSender(),
+                request.getSubject(),
+                request.getBody()
+        );
+
+        int ruleRiskScore = detectionResult.getRiskScore();
+
+        MlPredictionResponse mlPrediction = mlServiceClient.predict(
+                MlPredictionRequest.builder()
+                        .sender(request.getSender())
+                        .subject(request.getSubject())
+                        .body(request.getBody())
+                        .build()
+        );
+
+        int finalRiskScore = calculateFinalRiskScore(
+                ruleRiskScore,
+                mlPrediction.getFraudProbability()
+        );
+
+        EmailStatus finalStatus = calculateFinalStatus(finalRiskScore);
+        RiskLevel finalRiskLevel = calculateFinalRiskLevel(finalRiskScore);
+
+        List<String> combinedReasons = new ArrayList<>();
+
+        if (detectionResult.getReasons() != null) {
+            combinedReasons.addAll(detectionResult.getReasons());
+        }
+
+        if (mlPrediction.getReasons() != null) {
+            mlPrediction.getReasons().forEach(reason ->
+                    combinedReasons.add("[ML] " + reason)
+            );
+        }
+
+        String reasonsAsText = String.join(" | ", combinedReasons);
+
+        ScanResult savedScanResult = scanResultRepository.save(
+                ScanResult.builder()
+                        .riskScore(finalRiskScore)
+                        .riskLevel(finalRiskLevel)
+                        .status(finalStatus)
+                        .reasons(reasonsAsText)
+                        .emailMessage(savedEmail)
+                        .build()
+        );
+
+        AuditLogRequest auditLogRequest = AuditLogRequest.builder()
+                .emailId(savedEmail.getId())
+                .userId(request.getUserId())
+                .eventType(finalStatus == EmailStatus.FLAGGED
+                        ? AuditEventType.EMAIL_FLAGGED
+                        : AuditEventType.EMAIL_SCANNED)
+                .performedBy("scanner-service")
+                .details(finalStatus == EmailStatus.FLAGGED
+                        ? "Email flagged with final risk score " + finalRiskScore
+                        : "Email scanned with final status " + finalStatus + " and final risk score " + finalRiskScore)
+                .build();
+
+        auditServiceClient.createAuditLog(auditLogRequest);
+
+        return ScanResponse.builder()
+                .emailId(savedEmail.getId())
+                .scanId(savedScanResult.getId())
+                .status(finalStatus)
+                .riskLevel(finalRiskLevel)
+                .riskScore(finalRiskScore)
+                .reasons(combinedReasons)
+                .scannedAt(savedScanResult.getScannedAt())
+                .mlFraudProbability(mlPrediction.getFraudProbability())
+                .mlPrediction(mlPrediction.getPrediction())
+                .mlRiskLevel(mlPrediction.getRiskLevel())
+                .mlModelVersion(mlPrediction.getModelVersion())
+                .mlReasons(mlPrediction.getReasons())
+                .ruleRiskScore(ruleRiskScore)
+                .finalRiskScore(finalRiskScore)
+                .build();
+    }
+
+    private int calculateFinalRiskScore(int ruleScore, Double mlProbability) {
+        int mlScore = mlProbability == null
+                ? 0
+                : (int) Math.round(mlProbability * 100);
+
+        return (int) Math.round((ruleScore * 0.6) + (mlScore * 0.4));
+    }
+
+    private EmailStatus calculateFinalStatus(int finalScore) {
+        if (finalScore >= 70) {
+            return EmailStatus.FLAGGED;
+        }
+
+        if (finalScore >= 40) {
+            return EmailStatus.SUSPICIOUS;
+        }
+
+        return EmailStatus.SAFE;
+    }
+
+    private RiskLevel calculateFinalRiskLevel(int finalScore) {
+        if (finalScore >= 70) {
+            return RiskLevel.HIGH;
+        }
+
+        if (finalScore >= 40) {
+            return RiskLevel.MEDIUM;
+        }
+
+        return RiskLevel.LOW;
+    }
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\service\FeedbackService.java
+============================================================
+package com.fraudscanner.scannerservice.service;
+
+
+import com.fraudscanner.scannerservice.client.AuditServiceClient;
+import com.fraudscanner.scannerservice.dto.AuditLogRequest;
+import com.fraudscanner.scannerservice.dto.FeedbackRequest;
+import com.fraudscanner.scannerservice.entity.EmailMessage;
+import com.fraudscanner.scannerservice.entity.UserFeedback;
+import com.fraudscanner.scannerservice.enums.AuditEventType;
+import com.fraudscanner.scannerservice.enums.FeedbackLabel;
+import com.fraudscanner.scannerservice.repository.EmailMessageRepository;
+import com.fraudscanner.scannerservice.repository.UserFeedbackRepository;
+import org.springframework.stereotype.Service;
+
+@Service
+public class FeedbackService {
+
+    private final EmailMessageRepository emailMessageRepository;
+    private final UserFeedbackRepository userFeedbackRepository;
+    private final AuditServiceClient auditServiceClient;
+
+    public FeedbackService(
+            EmailMessageRepository emailMessageRepository,
+            UserFeedbackRepository userFeedbackRepository,
+            AuditServiceClient auditServiceClient
+    ) {
+        this.emailMessageRepository = emailMessageRepository;
+        this.userFeedbackRepository = userFeedbackRepository;
+        this.auditServiceClient = auditServiceClient;
+    }
+
+    public String submitFeedback(FeedbackRequest request) {
+        EmailMessage emailMessage = emailMessageRepository.findById(request.getEmailId())
+                .orElseThrow(() -> new RuntimeException("Email not found"));
+
+        // Build UserFeedback using Lombok builder
+        UserFeedback feedback = UserFeedback.builder()
+                .userId(request.getUserId())
+                .label(request.getLabel())
+                .comment(request.getComment())
+                .emailMessage(emailMessage)
+                .build();
+
+        userFeedbackRepository.save(feedback);
+
+        // Resolve AuditEventType based on feedback label
+        AuditEventType eventType = AuditEventType.FEEDBACK_SUBMITTED;
+        if (request.getLabel() == FeedbackLabel.FALSE_POSITIVE) {
+            eventType = AuditEventType.EMAIL_MARKED_FALSE_POSITIVE;
+        } else if (request.getLabel() == FeedbackLabel.CONFIRMED_FRAUD) {
+            eventType = AuditEventType.EMAIL_CONFIRMED_FRAUD;
+        }
+
+        // Build AuditLogRequest using Lombok builder
+        AuditLogRequest auditLogRequest = AuditLogRequest.builder()
+                .emailId(emailMessage.getId())
+                .userId(request.getUserId())
+                .eventType(eventType)
+                .performedBy("reviewerName")
+                .details("Feedback submitted: " + request.getLabel())
+                .build();
+
+        auditServiceClient.createAuditLog(auditLogRequest);
+
+        return "Feedback submitted successfully";
+    }
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\service\RuleDetectionService.java
+============================================================
+package com.fraudscanner.scannerservice.service;
+
+import com.fraudscanner.scannerservice.enums.EmailStatus;
+import com.fraudscanner.scannerservice.enums.RiskLevel;
+import lombok.Value;
+import lombok.Builder;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+public class RuleDetectionService {
+
+    public DetectionResult analyze(String sender, String subject, String body) {
+        int score = 0;
+        List<String> reasons = new ArrayList<>();
+
+        String safeSender = sender == null ? "" : sender.toLowerCase();
+        String safeSubject = subject == null ? "" : subject.toLowerCase();
+        String safeBody = body == null ? "" : body.toLowerCase();
+        String fullText = safeSubject + " " + safeBody;
+
+        if (containsUrgentWords(fullText)) {
+            score += 20;
+            reasons.add("Email contains urgent or pressure-based words");
+        }
+
+        if (containsFinancialWords(fullText)) {
+            score += 15;
+            reasons.add("Email contains financial or account-related keywords");
+        }
+
+        if (containsSuspiciousLinks(fullText)) {
+            score += 25;
+            reasons.add("Email contains suspicious or shortened links");
+        }
+
+        if (isSuspiciousSender(safeSender)) {
+            score += 25;
+            reasons.add("Sender domain looks suspicious");
+        }
+
+        if (containsCredentialRequest(fullText)) {
+            score += 20;
+            reasons.add("Email asks for credentials or account verification");
+        }
+
+        if (containsAttachmentRisk(fullText)) {
+            score += 15;
+            reasons.add("Email mentions potentially risky attachments");
+        }
+
+        if (score > 100) {
+            score = 100;
+        }
+
+        RiskLevel riskLevel = resolveRiskLevel(score);
+        EmailStatus status = resolveStatus(score);
+
+        if (reasons.isEmpty()) {
+            reasons.add("No suspicious indicators detected");
+        }
+
+        return DetectionResult.builder()
+                .riskScore(score)
+                .riskLevel(riskLevel)
+                .status(status)
+                .reasons(reasons)
+                .build();
+    }
+
+    private boolean containsUrgentWords(String text) {
+        return text.contains("urgent")
+                || text.contains("immediately")
+                || text.contains("limited time")
+                || text.contains("act now")
+                || text.contains("suspended")
+                || text.contains("blocked")
+                || text.contains("verify now");
+    }
+
+    private boolean containsFinancialWords(String text) {
+        return text.contains("bank")
+                || text.contains("payment")
+                || text.contains("invoice")
+                || text.contains("account")
+                || text.contains("credit card")
+                || text.contains("transaction")
+                || text.contains("refund");
+    }
+
+    private boolean containsSuspiciousLinks(String text) {
+        return text.contains("http://")
+                || text.contains("https://")
+                || text.contains("bit.ly")
+                || text.contains("tinyurl")
+                || text.contains("click here")
+                || text.contains("login here");
+    }
+
+    private boolean isSuspiciousSender(String sender) {
+        return sender.contains("fake")
+                || sender.contains("security-alert")
+                || sender.contains("verify")
+                || sender.contains("support-login")
+                || sender.endsWith(".ru")
+                || sender.endsWith(".xyz");
+    }
+
+    private boolean containsCredentialRequest(String text) {
+        return text.contains("password")
+                || text.contains("verify your account")
+                || text.contains("confirm your identity")
+                || text.contains("login to your account")
+                || text.contains("update your information");
+    }
+
+    private boolean containsAttachmentRisk(String text) {
+        return text.contains(".exe")
+                || text.contains(".bat")
+                || text.contains(".cmd")
+                || text.contains(".scr")
+                || text.contains("macro enabled");
+    }
+
+    private RiskLevel resolveRiskLevel(int score) {
+        if (score >= 70) {
+            return RiskLevel.HIGH;
+        }
+        if (score >= 35) {
+            return RiskLevel.MEDIUM;
+        }
+        return RiskLevel.LOW;
+    }
+
+    private EmailStatus resolveStatus(int score) {
+        if (score >= 70) {
+            return EmailStatus.FLAGGED;
+        }
+        if (score >= 35) {
+            return EmailStatus.SUSPICIOUS;
+        }
+        return EmailStatus.SAFE;
+    }
+
+    @Value
+    @Builder
+    public static class DetectionResult {
+        int riskScore;
+        RiskLevel riskLevel;
+        EmailStatus status;
+        List<String> reasons;
+    }
+}
+
+============================================================
+FILE: C:\Users\PC\Desktop\fraud-email-scanner-platform\backend\scanner-service\src\main\java\com\fraudscanner\scannerservice\service\StatisticsService.java
+============================================================
+package com.fraudscanner.scannerservice.service;
+
+import com.fraudscanner.scannerservice.dto.DistributionResponse;
+import com.fraudscanner.scannerservice.dto.StatisticsSummaryResponse;
+import com.fraudscanner.scannerservice.dto.TopSenderResponse;
+import com.fraudscanner.scannerservice.entity.ScanResult;
+import com.fraudscanner.scannerservice.enums.EmailStatus;
+import com.fraudscanner.scannerservice.repository.EmailMessageRepository;
+import com.fraudscanner.scannerservice.repository.ScanResultRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+public class StatisticsService {
+
+    private final EmailMessageRepository emailMessageRepository;
+    private final ScanResultRepository scanResultRepository;
+
+    public StatisticsService(
+            EmailMessageRepository emailMessageRepository,
+            ScanResultRepository scanResultRepository
+    ) {
+        this.emailMessageRepository = emailMessageRepository;
+        this.scanResultRepository = scanResultRepository;
+    }
+
+    public StatisticsSummaryResponse getSummary(Long userId, String role) {
+        List<ScanResult> scanResults = getAccessibleScanResults(userId, role);
+
+        long totalEmails = isAdmin(role)
+                ? emailMessageRepository.count()
+                : scanResults.size();
+
+        long safeEmails = scanResults.stream()
+                .filter(result -> result.getStatus() == EmailStatus.SAFE)
+                .count();
+
+        long suspiciousEmails = scanResults.stream()
+                .filter(result -> result.getStatus() == EmailStatus.SUSPICIOUS)
+                .count();
+
+        long flaggedEmails = scanResults.stream()
+                .filter(result -> result.getStatus() == EmailStatus.FLAGGED)
+                .count();
+
+        double flaggedRate = totalEmails == 0
+                ? 0
+                : ((double) flaggedEmails / totalEmails) * 100;
+
+        double averageRiskScore = scanResults.isEmpty()
+                ? 0
+                : scanResults.stream()
+                .mapToInt(result -> result.getRiskScore() == null ? 0 : result.getRiskScore())
+                .average()
+                .orElse(0);
+
+        return new StatisticsSummaryResponse(
+                totalEmails,
+                safeEmails,
+                suspiciousEmails,
+                flaggedEmails,
+                round(flaggedRate),
+                round(averageRiskScore)
+        );
+    }
+
+    public List<DistributionResponse> getStatusDistribution(Long userId, String role) {
+        List<ScanResult> scanResults = getAccessibleScanResults(userId, role);
+
+        return scanResults.stream()
+                .collect(Collectors.groupingBy(
+                        result -> result.getStatus().toString(),
+                        Collectors.counting()
+                ))
+                .entrySet()
+                .stream()
+                .map(entry -> new DistributionResponse(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    public List<DistributionResponse> getRiskDistribution(Long userId, String role) {
+        List<ScanResult> scanResults = getAccessibleScanResults(userId, role);
+
+        return scanResults.stream()
+                .collect(Collectors.groupingBy(
+                        result -> result.getRiskLevel().toString(),
+                        Collectors.counting()
+                ))
+                .entrySet()
+                .stream()
+                .map(entry -> new DistributionResponse(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    public List<TopSenderResponse> getTopFlaggedSenders(Long userId, String role) {
+        List<ScanResult> scanResults = getAccessibleScanResults(userId, role);
+
+        Map<String, Long> senderCounts = scanResults.stream()
+                .filter(result -> result.getStatus() == EmailStatus.FLAGGED)
+                .filter(result -> result.getEmailMessage() != null)
+                .collect(Collectors.groupingBy(
+                        result -> result.getEmailMessage().getSender() == null
+                                ? "Unknown sender"
+                                : result.getEmailMessage().getSender(),
+                        Collectors.counting()
+                ));
+
+        return senderCounts.entrySet()
+                .stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .limit(5)
+                .map(entry -> new TopSenderResponse(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    private List<ScanResult> getAccessibleScanResults(Long userId, String role) {
+        if (isAdmin(role)) {
+            return scanResultRepository.findAll();
+        }
+
+        if (userId == null) {
+            return List.of();
+        }
+
+        return scanResultRepository.findByEmailMessageUserId(userId);
+    }
+
+    private boolean isAdmin(String role) {
+        return role != null && role.equalsIgnoreCase("ADMIN");
+    }
+
+    private double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
+    }
+}

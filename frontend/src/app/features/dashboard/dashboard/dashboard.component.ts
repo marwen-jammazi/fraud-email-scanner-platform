@@ -1,14 +1,10 @@
-import {
-  AfterViewInit,
-  Component,
-  OnDestroy
-} from '@angular/core';
+import { AfterViewInit, Component, OnDestroy } from '@angular/core';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import {
   DistributionItem,
   StatisticsService,
   StatisticsSummary,
-  TopSender
+  TopSender,
 } from '../../../core/services/statistics.service';
 
 Chart.register(...registerables);
@@ -16,7 +12,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss']
+  styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements AfterViewInit, OnDestroy {
   summary: StatisticsSummary | null = null;
@@ -52,7 +48,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       error: (error) => {
         console.error('Summary error:', error);
         this.errorMessage = 'Failed to load dashboard summary.';
-      }
+      },
     });
 
     this.statisticsService.getStatusDistribution().subscribe({
@@ -62,7 +58,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       },
       error: (error) => {
         console.error('Status distribution error:', error);
-      }
+      },
     });
 
     this.statisticsService.getRiskDistribution().subscribe({
@@ -72,7 +68,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       },
       error: (error) => {
         console.error('Risk distribution error:', error);
-      }
+      },
     });
 
     this.statisticsService.getTopFlaggedSenders().subscribe({
@@ -82,8 +78,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       },
       error: (error) => {
         console.error('Top senders error:', error);
+        this.errorMessage = 'Failed to load top flagged senders.';
         this.loading = false;
-      }
+      },
     });
   }
 
@@ -97,16 +94,26 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }
 
   getDistributionLabel(item: DistributionItem): string {
-    return item.label || item.name || item.status || item.riskLevel || 'Unknown';
+    return (
+      item.label || item.name || item.status || item.riskLevel || 'Unknown'
+    );
   }
 
   getSenderName(sender: TopSender): string {
-    return sender.sender || sender.senderEmail || sender.email || 'Unknown sender';
+    return (
+      sender.sender || sender.senderEmail || sender.email || 'Unknown sender'
+    );
+  }
+
+  getFlaggedCount(sender: TopSender): number {
+    return sender.flaggedCount ?? sender.count ?? 0;
   }
 
   private renderStatusChart(): void {
     setTimeout(() => {
-      const canvas = document.getElementById('statusChart') as HTMLCanvasElement | null;
+      const canvas = document.getElementById(
+        'statusChart',
+      ) as HTMLCanvasElement | null;
 
       if (!canvas) {
         return;
@@ -114,7 +121,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
       this.statusChart?.destroy();
 
-      const labels = this.statusDistribution.map((item) => this.getDistributionLabel(item));
+      const labels = this.statusDistribution.map((item) =>
+        this.getDistributionLabel(item),
+      );
       const values = this.statusDistribution.map((item) => item.count);
 
       const config: ChartConfiguration = {
@@ -124,19 +133,19 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
           datasets: [
             {
               data: values,
-              borderWidth: 2
-            }
-          ]
+              borderWidth: 2,
+            },
+          ],
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              position: 'bottom'
-            }
-          }
-        }
+              position: 'bottom',
+            },
+          },
+        },
       };
 
       this.statusChart = new Chart(canvas, config);
@@ -145,7 +154,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
   private renderRiskChart(): void {
     setTimeout(() => {
-      const canvas = document.getElementById('riskChart') as HTMLCanvasElement | null;
+      const canvas = document.getElementById(
+        'riskChart',
+      ) as HTMLCanvasElement | null;
 
       if (!canvas) {
         return;
@@ -153,7 +164,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
       this.riskChart?.destroy();
 
-      const labels = this.riskDistribution.map((item) => this.getDistributionLabel(item));
+      const labels = this.riskDistribution.map((item) =>
+        this.getDistributionLabel(item),
+      );
       const values = this.riskDistribution.map((item) => item.count);
 
       const config: ChartConfiguration = {
@@ -164,27 +177,27 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
             {
               label: 'Emails',
               data: values,
-              borderWidth: 1
-            }
-          ]
+              borderWidth: 1,
+            },
+          ],
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              display: false
-            }
+              display: false,
+            },
           },
           scales: {
             y: {
               beginAtZero: true,
               ticks: {
-                precision: 0
-              }
-            }
-          }
-        }
+                precision: 0,
+              },
+            },
+          },
+        },
       };
 
       this.riskChart = new Chart(canvas, config);

@@ -200,3 +200,270 @@ body.dark-theme .delete-modal {
   background: var(--app-surface) !important;
   border-color: var(--app-border) !important;
 }
+
+/* MOTION_SYSTEM_GLOBAL_V1 */
+
+:root {
+  --motion-fast: 180ms;
+  --motion-medium: 340ms;
+  --motion-slow: 560ms;
+  --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.content > *:not(router-outlet) {
+  display: block;
+  animation: route-content-enter var(--motion-slow) var(--motion-ease) both;
+}
+
+.page-heading {
+  animation: section-rise 0.48s var(--motion-ease) both;
+}
+
+.kpi-grid .kpi-card,
+.analytics-grid .panel,
+.profile-grid .profile-card,
+.details-grid .details-card {
+  animation: card-rise 0.5s var(--motion-ease) both;
+}
+
+.kpi-grid .kpi-card:nth-child(1) {
+  animation-delay: 40ms;
+}
+
+.kpi-grid .kpi-card:nth-child(2) {
+  animation-delay: 80ms;
+}
+
+.kpi-grid .kpi-card:nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.kpi-grid .kpi-card:nth-child(4) {
+  animation-delay: 160ms;
+}
+
+.kpi-grid .kpi-card:nth-child(5) {
+  animation-delay: 200ms;
+}
+
+.analytics-grid .panel:nth-child(1) {
+  animation-delay: 150ms;
+}
+
+.analytics-grid .panel:nth-child(2) {
+  animation-delay: 220ms;
+}
+
+.kpi-card,
+.panel,
+.scan-card,
+.result-card,
+.emails-panel,
+.details-card,
+.feedback-card,
+.edit-email-card,
+.audit-panel,
+.users-panel,
+.profile-card {
+  transition:
+    transform var(--motion-medium) var(--motion-ease),
+    box-shadow var(--motion-medium) ease,
+    border-color var(--motion-medium) ease,
+    background var(--motion-medium) ease;
+}
+
+.kpi-card:hover,
+.panel:hover,
+.scan-card:hover,
+.emails-panel:hover,
+.details-card:hover,
+.feedback-card:hover,
+.profile-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-medium);
+}
+
+.table tbody tr {
+  animation: row-enter 0.42s var(--motion-ease) both;
+}
+
+.table tbody tr:nth-child(1) {
+  animation-delay: 30ms;
+}
+
+.table tbody tr:nth-child(2) {
+  animation-delay: 65ms;
+}
+
+.table tbody tr:nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.table tbody tr:nth-child(4) {
+  animation-delay: 135ms;
+}
+
+.table tbody tr:nth-child(5) {
+  animation-delay: 170ms;
+}
+
+.alert {
+  animation: alert-enter 0.38s var(--motion-ease) both;
+}
+
+.loading-card {
+  position: relative;
+  overflow: hidden;
+  animation: loading-card-enter 0.35s var(--motion-ease) both;
+}
+
+.loading-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -70%;
+  width: 52%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(56, 189, 248, 0.09),
+    transparent
+  );
+  animation: loading-sheen 1.35s ease-in-out infinite;
+}
+
+.refresh-btn,
+.new-scan-btn,
+.details-btn,
+.scan-btn,
+.save-btn,
+.upload-btn,
+.password-btn,
+.feedback-btn,
+.topbar-theme-btn,
+.theme-toggle-btn,
+.logout-btn {
+  transition:
+    transform var(--motion-fast) ease,
+    box-shadow var(--motion-medium) ease,
+    background var(--motion-medium) ease,
+    color var(--motion-medium) ease;
+}
+
+.refresh-btn:active,
+.new-scan-btn:active,
+.details-btn:active,
+.scan-btn:active,
+.save-btn:active,
+.upload-btn:active,
+.password-btn:active,
+.feedback-btn:active {
+  transform: scale(0.97);
+}
+
+.delete-modal,
+.edit-panel {
+  animation: dialog-pop 0.3s var(--motion-ease) both;
+}
+
+@keyframes route-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes section-rise {
+  from {
+    opacity: 0;
+    transform: translateY(11px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes card-rise {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.988);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes row-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes alert-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loading-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loading-sheen {
+  to {
+    left: 118%;
+  }
+}
+
+@keyframes dialog-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}

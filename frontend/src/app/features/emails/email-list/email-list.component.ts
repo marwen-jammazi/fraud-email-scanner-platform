@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ScannerService } from '../../../core/services/scanner.service';
 
+type EmailListMode = 'flagged' | 'all';
+
 @Component({
   selector: 'app-email-list',
   templateUrl: './email-list.component.html',
@@ -21,31 +23,43 @@ export class EmailListComponent implements OnInit {
   showDeleteModal = false;
   selectedEmailToDelete: any = null;
 
+  mode: EmailListMode = 'flagged';
+
   constructor(
     private scannerService: ScannerService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe(() => {
-      this.loadFlaggedEmails();
+    this.route.data.subscribe((data) => {
+      this.mode = data['mode'] === 'all' ? 'all' : 'flagged';
+      this.searchTerm = '';
+      this.loadEmails();
     });
   }
 
-  loadFlaggedEmails(): void {
+  loadEmails(): void {
     this.loading = true;
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.scannerService.getFlaggedEmails().subscribe({
+    const request$ =
+      this.mode === 'all'
+        ? this.scannerService.getAllEmails()
+        : this.scannerService.getFlaggedEmails();
+
+    request$.subscribe({
       next: (data) => {
         this.emails = data || [];
         this.applyCurrentFilter();
         this.loading = false;
       },
       error: (error) => {
-        console.error('Flagged emails error:', error);
-        this.errorMessage = 'Failed to load flagged emails.';
+        console.error('Email list loading error:', error);
+        this.errorMessage =
+          this.mode === 'all'
+            ? 'Failed to load scanned emails.'
+            : 'Failed to load flagged emails.';
         this.loading = false;
       },
     });
@@ -55,7 +69,7 @@ export class EmailListComponent implements OnInit {
     this.applyCurrentFilter();
   }
 
-  applyCurrentFilter(): void {
+  private applyCurrentFilter(): void {
     const term = this.searchTerm.toLowerCase().trim();
 
     if (!term) {
@@ -69,8 +83,70 @@ export class EmailListComponent implements OnInit {
     });
   }
 
+  isAllScansMode(): boolean {
+    return this.mode === 'all';
+  }
+
   isAdmin(): boolean {
     return localStorage.getItem('role') === 'ADMIN';
+  }
+
+  getPageEyebrow(): string {
+    return this.isAllScansMode() ? 'Scan History' : 'Threat Inbox';
+  }
+
+  getPageTitle(): string {
+    if (!this.isAllScansMode()) {
+      return 'Flagged Emails';
+    }
+
+    return this.isAdmin() ? 'All Scanned Emails' : 'My Scanned Emails';
+  }
+
+  getPageDescription(): string {
+    if (!this.isAllScansMode()) {
+      return 'Review suspicious and high-risk emails detected by the scanner service.';
+    }
+
+    return this.isAdmin()
+      ? 'Review every email scan available across the platform.'
+      : 'Review all emails you have scanned and access their analysis results.';
+  }
+
+  getLoadingMessage(): string {
+    return this.isAllScansMode()
+      ? 'Loading scanned emails...'
+      : 'Loading flagged emails...';
+  }
+
+  getEmptyTitle(): string {
+    return this.isAllScansMode()
+      ? 'No scanned emails found'
+      : 'No flagged emails found';
+  }
+
+  getEmptyDescription(): string {
+    return this.isAllScansMode()
+      ? 'Run a new scan to populate your scan history.'
+      : 'No high-risk emails are currently available for review.';
+  }
+
+  getEmptyIcon(): string {
+    return this.isAllScansMode() ? 'bi-inbox' : 'bi-shield-check';
+  }
+
+  getMailIcon(email: any): string {
+    const status = this.getStatus(email).toUpperCase();
+
+    if (status === 'FLAGGED') {
+      return 'bi-envelope-exclamation-fill';
+    }
+
+    if (status === 'SUSPICIOUS') {
+      return 'bi-envelope-paper-fill';
+    }
+
+    return 'bi-envelope-check-fill';
   }
 
   openDeleteModal(email: any): void {
@@ -112,7 +188,9 @@ export class EmailListComponent implements OnInit {
 
     this.scannerService.deleteEmail(emailId).subscribe({
       next: () => {
-        this.emails = this.emails.filter((email) => this.getId(email) !== emailId);
+        this.emails = this.emails.filter(
+          (email) => this.getId(email) !== emailId,
+        );
         this.applyCurrentFilter();
 
         this.successMessage = `Email #${emailId} deleted successfully.`;
@@ -130,39 +208,47 @@ export class EmailListComponent implements OnInit {
   }
 
   getId(email: any): number {
-    return email.id || email.emailId || email.emailMessageId;
+    return email?.id || email?.emailId || email?.emailMessageId;
   }
 
   getSender(email: any): string {
-    return email.sender || email.senderEmail || email.from || 'Unknown sender';
+    return email?.sender || email?.senderEmail || email?.from || 'Unknown sender';
   }
 
   getSubject(email: any): string {
-    return email.subject || 'No subject';
+    return email?.subject || 'No subject';
   }
 
   getStatus(email: any): string {
-    return email.status || email.emailStatus || 'FLAGGED';
+    return email?.status || email?.emailStatus || 'UNKNOWN';
   }
 
   getRiskLevel(email: any): string {
-    return email.riskLevel || 'HIGH';
+    return email?.riskLevel || 'N/A';
   }
 
   getRiskScore(email: any): number {
-    return email.riskScore ?? 0;
+    return email?.riskScore ?? 0;
   }
 
   getDate(email: any): string {
-    return email.receivedAt || email.scannedAt || email.createdAt || '';
+    return email?.receivedAt || email?.scannedAt || email?.createdAt || '';
   }
 
   getStatusClass(status: string): string {
     const value = (status || '').toUpperCase();
 
-    if (value === 'FLAGGED') return 'status-flagged';
-    if (value === 'SUSPICIOUS') return 'status-suspicious';
-    if (value === 'SAFE') return 'status-safe';
+    if (value === 'FLAGGED') {
+      return 'status-flagged';
+    }
+
+    if (value === 'SUSPICIOUS') {
+      return 'status-suspicious';
+    }
+
+    if (value === 'SAFE') {
+      return 'status-safe';
+    }
 
     return 'status-neutral';
   }

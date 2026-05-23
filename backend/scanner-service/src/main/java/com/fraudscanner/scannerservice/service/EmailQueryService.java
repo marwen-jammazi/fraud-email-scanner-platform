@@ -50,20 +50,25 @@ public class EmailQueryService {
     }
 
     public List<EmailSummaryResponse> getFlaggedEmails(Long userId, String role) {
-        if (isAdmin(role)) {
+        if (isInvestigator(role)) {
             return scanResultRepository.findByStatus(EmailStatus.FLAGGED)
                     .stream()
                     .map(this::mapToSummary)
                     .toList();
         }
 
-        return scanResultRepository.findByStatusAndEmailMessageUserId(EmailStatus.FLAGGED, userId)
+        return scanResultRepository
+                .findByStatusAndEmailMessageUserId(EmailStatus.FLAGGED, userId)
                 .stream()
                 .map(this::mapToSummary)
                 .toList();
     }
 
-    public List<EmailSummaryResponse> getEmailsByStatus(EmailStatus status, Long userId, String role) {
+    public List<EmailSummaryResponse> getEmailsByStatus(
+            EmailStatus status,
+            Long userId,
+            String role
+    ) {
         if (isAdmin(role)) {
             return scanResultRepository.findByStatus(status)
                     .stream()
@@ -71,30 +76,44 @@ public class EmailQueryService {
                     .toList();
         }
 
-        return scanResultRepository.findByStatusAndEmailMessageUserId(status, userId)
+        if (isAnalyst(role)
+                && (status == EmailStatus.FLAGGED || status == EmailStatus.SUSPICIOUS)) {
+            return scanResultRepository.findByStatus(status)
+                    .stream()
+                    .map(this::mapToSummary)
+                    .toList();
+        }
+
+        return scanResultRepository
+                .findByStatusAndEmailMessageUserId(status, userId)
                 .stream()
                 .map(this::mapToSummary)
                 .toList();
     }
 
     public EmailDetailsResponse getEmailDetails(Long emailId, Long userId, String role) {
-        ScanResult scanResult;
+        ScanResult scanResult = scanResultRepository.findByEmailMessageId(emailId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Email scan result not found"
+                ));
 
         if (isAdmin(role)) {
-            scanResult = scanResultRepository.findByEmailMessageId(emailId)
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.NOT_FOUND,
-                            "Email scan result not found"
-                    ));
-        } else {
-            scanResult = scanResultRepository.findByEmailMessageIdAndEmailMessageUserId(emailId, userId)
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.NOT_FOUND,
-                            "Email scan result not found or access denied"
-                    ));
+            return mapToDetails(scanResult);
         }
 
-        return mapToDetails(scanResult);
+        if (belongsToUser(scanResult, userId)) {
+            return mapToDetails(scanResult);
+        }
+
+        if (isAnalyst(role) && isInvestigable(scanResult)) {
+            return mapToDetails(scanResult);
+        }
+
+        throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Email scan result not found or access denied"
+        );
     }
 
     public EmailDetailsResponse updateEmail(
@@ -195,6 +214,23 @@ public class EmailQueryService {
 
     private boolean isAdmin(String role) {
         return role != null && role.equalsIgnoreCase("ADMIN");
+    }
+
+    private boolean isAnalyst(String role) {
+        return role != null && role.equalsIgnoreCase("ANALYST");
+    }
+
+    private boolean isInvestigator(String role) {
+        return isAdmin(role) || isAnalyst(role);
+    }
+
+    private boolean isInvestigable(ScanResult scanResult) {
+        if (scanResult == null || scanResult.getStatus() == null) {
+            return false;
+        }
+
+        return scanResult.getStatus() == EmailStatus.FLAGGED
+                || scanResult.getStatus() == EmailStatus.SUSPICIOUS;
     }
 
     private boolean belongsToUser(ScanResult scanResult, Long userId) {

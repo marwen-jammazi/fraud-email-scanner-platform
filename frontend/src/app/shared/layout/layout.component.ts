@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -6,9 +6,16 @@ import { AuthService } from '../../core/services/auth.service';
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.scss'],
 })
-export class LayoutComponent implements OnInit {
+export class LayoutComponent implements OnInit, OnDestroy {
   isDarkTheme = false;
   sidebarImageFailed = false;
+  showPostLoginLoader = false;
+
+  private postLoginLoaderTimer?: number;
+
+  private readonly postLoginLoaderHandler = (): void => {
+    this.showApplicationLoader();
+  };
 
   constructor(private authService: AuthService) {}
 
@@ -17,6 +24,22 @@ export class LayoutComponent implements OnInit {
 
     this.isDarkTheme = savedTheme === 'dark';
     this.applyTheme();
+
+    window.addEventListener(
+      'fraudscanner:show-post-login-loader',
+      this.postLoginLoaderHandler,
+    );
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener(
+      'fraudscanner:show-post-login-loader',
+      this.postLoginLoaderHandler,
+    );
+
+    if (this.postLoginLoaderTimer) {
+      window.clearTimeout(this.postLoginLoaderTimer);
+    }
   }
 
   isLoggedIn(): boolean {
@@ -25,6 +48,18 @@ export class LayoutComponent implements OnInit {
 
   isAdmin(): boolean {
     return localStorage.getItem('role') === 'ADMIN';
+  }
+
+  isAnalyst(): boolean {
+    return localStorage.getItem('role') === 'ANALYST';
+  }
+
+  canViewAuditLogs(): boolean {
+    return this.isAdmin() || this.isAnalyst();
+  }
+
+  canViewScannedEmails(): boolean {
+    return !this.isAnalyst();
   }
 
   getUserEmail(): string | null {
@@ -68,11 +103,24 @@ export class LayoutComponent implements OnInit {
     this.applyTheme();
   }
 
-  private applyTheme(): void {
-    document.body.classList.toggle('dark-theme', this.isDarkTheme);
+  logout(): void {
+    this.showPostLoginLoader = false;
+    this.authService.logout();
   }
 
-  logout(): void {
-    this.authService.logout();
+  private showApplicationLoader(): void {
+    this.showPostLoginLoader = true;
+
+    if (this.postLoginLoaderTimer) {
+      window.clearTimeout(this.postLoginLoaderTimer);
+    }
+
+    this.postLoginLoaderTimer = window.setTimeout(() => {
+      this.showPostLoginLoader = false;
+    }, 3000);
+  }
+
+  private applyTheme(): void {
+    document.body.classList.toggle('dark-theme', this.isDarkTheme);
   }
 }

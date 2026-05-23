@@ -26,7 +26,12 @@ export interface TopSender {
   sender?: string;
   senderEmail?: string;
   email?: string;
-  count: number;
+
+  // Current backend field
+  flaggedCount?: number;
+
+  // Kept as fallback in case older API responses still use count
+  count?: number;
 }
 
 @Injectable({

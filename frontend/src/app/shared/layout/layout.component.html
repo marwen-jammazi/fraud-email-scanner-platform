@@ -1,4 +1,45 @@
 <ng-container *ngIf="isLoggedIn(); else authOnly">
+  <div *ngIf="showPostLoginLoader" class="app-entry-loader" aria-live="polite">
+    <div class="entry-loader-background">
+      <div class="entry-loader-orb orb-left"></div>
+      <div class="entry-loader-orb orb-right"></div>
+      <div class="entry-scan-line"></div>
+    </div>
+
+    <div class="entry-loader-content">
+      <div class="entry-brand">
+        <div class="entry-brand-icon">
+          <i class="bi bi-shield-lock-fill"></i>
+        </div>
+
+        <div>
+          <strong>Fraud Email Scanner</strong>
+          <span>Secure Analysis Console</span>
+        </div>
+      </div>
+
+      <div class="entry-shield-loader">
+        <div class="entry-ring ring-outer"></div>
+        <div class="entry-ring ring-inner"></div>
+
+        <div class="entry-core">
+          <i class="bi bi-shield-check"></i>
+        </div>
+      </div>
+
+      <h2>Preparing your security workspace</h2>
+      <p>Loading dashboard analytics, scanner activity and threat intelligence...</p>
+
+      <div class="entry-progress">
+        <span></span>
+      </div>
+
+      <div class="entry-status">
+        <span class="entry-status-dot"></span>
+        Secure session established
+      </div>
+    </div>
+  </div>
   <div class="app-shell" [class.dark-shell]="isDarkTheme">
     <aside class="sidebar">
       <div class="brand">
@@ -23,12 +64,25 @@
           <span>Scan Email</span>
         </a>
 
+        <a
+          *ngIf="canViewScannedEmails()"
+          routerLink="/my-scans"
+          routerLinkActive="active"
+        >
+          <i class="bi bi-inbox-fill"></i>
+          <span>Scanned Emails</span>
+        </a>
+
         <a routerLink="/emails" routerLinkActive="active">
           <i class="bi bi-envelope-exclamation-fill"></i>
           <span>Flagged Emails</span>
         </a>
 
-        <a *ngIf="isAdmin()" routerLink="/audit-logs" routerLinkActive="active">
+        <a
+          *ngIf="canViewAuditLogs()"
+          routerLink="/audit-logs"
+          routerLinkActive="active"
+        >
           <i class="bi bi-clock-history"></i>
           <span>Audit Logs</span>
         </a>
@@ -72,7 +126,7 @@
           {{ isDarkTheme ? "Light Mode" : "Dark Mode" }}
         </button>
 
-        <button class="logout-btn" (click)="logout()">
+        <button class="logout-btn" type="button" (click)="logout()">
           <i class="bi bi-box-arrow-left"></i>
           Logout
         </button>
@@ -110,4 +164,4 @@
 
 <ng-template #authOnly>
   <router-outlet></router-outlet>
-</ng-template>  
+</ng-template>

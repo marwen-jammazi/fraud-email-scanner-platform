@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 
 import { AdminGuard } from './core/guards/admin.guard';
 import { AuthGuard } from './core/guards/auth.guard';
+import { InvestigationGuard } from './core/guards/investigation.guard';
 
 import { LoginComponent } from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
@@ -31,9 +32,16 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'my-scans',
+    component: EmailListComponent,
+    canActivate: [AuthGuard],
+    data: { mode: 'all' },
+  },
+  {
     path: 'emails',
     component: EmailListComponent,
     canActivate: [AuthGuard],
+    data: { mode: 'flagged' },
   },
   {
     path: 'emails/:id',
@@ -48,7 +56,7 @@ const routes: Routes = [
   {
     path: 'audit-logs',
     component: AuditLogsComponent,
-    canActivate: [AuthGuard, AdminGuard],
+    canActivate: [AuthGuard, InvestigationGuard],
   },
   {
     path: 'admin/users',
