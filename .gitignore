@@ -42,3 +42,47 @@ ml-service/*.csv
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+analyst-missing-files.txt
+deployment-input-safe.zip
+deployment-project-structure.txt
+git-project-info.txt
+motion-frontend-files.txt
+project-structure.txt
+scanner-service-current-code.txt
+uploads/*.txt
+backup-*/**/*.txt
+
+# IDE / local editor
+.idea/
+.vscode/
+
+# Build outputs
+target/
+dist/
+.angular/
+node_modules/
+
+# Python local env/cache
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Local generated deployment/debug files
+deployment-input-safe/
+deployment-input-safe.zip
+deployment-project-structure.txt
+git-project-info.txt
+motion-frontend-files.txt
+analyst-missing-files.txt
+project-structure.txt
+scanner-service-current-code.txt
+
+# Local uploads / runtime files
+uploads/*
+!uploads/.gitkeep
+
+# Logs and archives
+*.log
+*.zip
+*.rar
